@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.grid-stack {
+    background-color: #f4f4f4;
+    border: 1px solid #ccc;
+}
+
+.grid-stack-item-content {
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    cursor: grab;
+}
+
+/* Sidebar fixa e colapsável */
+.right-sidebar {
+    border-left: 1px solid #ccc;
+    padding: 15px;
+    background-color: #fff;
+    position: fixed;
+    top: 0;
+    right: -320px;
+    width: 300px;
+    height: 100%;
+    overflow-y: auto;
+    transition: right 0.3s ease-in-out;
+    z-index: 1050;
+}
+
+.right-sidebar.active {
+    right: 0;
+}
+
+.sidebar-toggle {
+    position: fixed;
+    top: 20px;
+    right: 10px;
+    z-index: 1100;
+}
+
+.grid-stack-item-content:active {
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar fixa e colapsável */
+.right-sidebar {
+    border-left: 1px solid #ccc;
+    padding: 15px;
+    background-color: #fff;
+    position: fixed;
+    top: 0;
+    right: -320px;
+    width: 300px;
+    height: 100%;
+    overflow-y: auto;
+    transition: right 0.3s ease-in-out;
+    z-index: 1050;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.right-sidebar.active {
+    right: 0;
+}
+
+.right-sidebar h5 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.right-sidebar p {
+    font-size: 14px;
+    color: #666;
+}
+
+.grid-stack-item {
+    cursor: move;
+}
+
+/* Estilos para os widgets no painel lateral */
+#right-sidebar .grid-stack-item-content {
+    background-color: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 12px;
+    text-align: center;
+    margin-bottom: 15px;
+    transition: background-color 0.3s ease-in-out;
+}
+
+#right-sidebar .grid-stack-item-content:hover {
+    background-color: #e0e0e0;
+}
+
+/* Personalizar botão da sidebar */
+.sidebar-toggle {
+    position: fixed;
+    top: 20px;
+    right: 10px;
+    z-index: 1100;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease-in-out;
+}
+
+.sidebar-toggle:hover {
+    background-color: #0056b3;
+}
+
+/* Estilização dos widgets */
+.news-item {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+}
+
+.news-item img {
+    max-width: 100%;
+    border-radius: 5px;
+}
+
+.news-item .news-content {
+    padding-left: 10px;
+}
+
+.news-item .btn {
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.news-item .d-flex {
+    display: flex;
+    align-items: center;
+}
+
+.news-item .d-flex img {
+    max-width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+/* Avisos */
+.list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+}
+
+.list-group-item button {
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.list-group-item button:hover {
+    background-color: #dcdcdc;
+}
+
+/* Estilo do botão de novo aviso */
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+    margin-bottom: 15px;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+/* Resposta visual de interação com a sidebar */
+#main-dashboard .grid-stack-item-content,
+#right-sidebar .grid-stack-item-content {
+    transition: transform 0.2s ease-in-out;
+}
+
+.grid-stack-item-content:active {
+    transform: scale(1.05);
+}
+
+/* Ajustes responsivos */
+@media (max-width: 767px) {
+    .sidebar-toggle {
+        top: 10px;
+        right: 10px;
+    }
+
+    .right-sidebar {
+        width: 250px;
+    }
+
+    .grid-stack-item-content {
+        padding: 8px;
+    }
+}
