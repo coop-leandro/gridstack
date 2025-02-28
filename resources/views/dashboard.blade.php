@@ -256,9 +256,29 @@
 
                     item.w = widget.w;
                     item.h = widget.h;
+                    item.x = widget.x;
+                    item.y = widget.y;
                     item.el.innerHTML = widget.content;
                     item.content = widget.content;
                 });
+            });
+
+            dashboard.on('change', function(event, items){
+                const layout = [];
+                items.forEach((item)=>{
+                    let widgetIndex = parseInt(item.el.dataset.widgetIndex, 10);      //TENTANDO FAZER ESSA DESGRAÇA CONCATENAR AS DUAS ARRAY DE OBJETOS PRA ENVIAR TUDO CERTO.
+                    let widget = Widgets[widgetIndex-1];
+                        item.el.innerHTML = widget.content;
+                        item.content = widget.content;
+                        if(!item.content){
+                            console.log('nao tem ');
+                            
+                        }
+                    layout.push(widget)                    
+                    const newLayout = dashboard.save();
+                    const cc = layout.concat(newLayout);
+                    console.log(item);
+                })
             });
 
             // dashboard.on('change', function(event, items) {
