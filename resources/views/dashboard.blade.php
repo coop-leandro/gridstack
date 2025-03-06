@@ -16,7 +16,7 @@
                 @livewire('dashboard-editor')
             </div>
         </div>
-
+        <button id="save-layout" class="btn btn-success save-layout mt-3">Salvar Layout</button>
         <button id="toggle-sidebar" class="btn btn-primary sidebar-toggle">Personalizar</button>
 
         <div id="sidebar" class="right-sidebar">
@@ -54,16 +54,15 @@
                 minRow: 10,
                 acceptWidgets: true,
                 float: true,
-                draggable: true
+                draggable: true,
             }, '#main-dashboard');
 
             let sidebarGrid = GridStack.init({
-                float: true,
+                float: false,
                 disableResize : true,
-                acceptWidgets: true,
             }, '#right-sidebar');
 
-            GridStack.setupDragIn('#right-sidebar .grid-stack-item', { appendTo: 'body' });
+            GridStack.setupDragIn('#right-sidebar .grid-stack-item', { appendTo: 'body', helper: 'clone' });
 
             const sidebar = document.getElementById('sidebar');
             const toggleButton = document.getElementById('toggle-sidebar');
@@ -72,6 +71,8 @@
                 sidebar.classList.toggle('active');
                 toggleButton.textContent = sidebar.classList.contains('active') ? 'Fechar' : 'Personalizar';
             });
+
+            const saveBtn = document.getElementById('save-layout');
 
             const Widgets = [
                 {   
@@ -84,6 +85,9 @@
                         <h4 class="d-flex align-items-center mb-3">
                             <i class="bi bi-newspaper me-2"></i> Notícias
                         </h4>
+                        <button class="btn btn-danger btn-sm remove-widget" style="display: none;">
+                            X
+                        </button>
                         <div class="news-item d-flex align-items-center border-bottom pb-3 mb-3">
                             <img src="https://picsum.photos/250/150" class="img-fluid rounded me-3" alt="Notícia">
                             <div class="news-content w-100">
@@ -169,6 +173,9 @@
                         <button class="btn btn-success mb-3">
                             <i class="bi bi-plus"></i> Novo aviso
                         </button>
+                        <button class="btn btn-danger btn-sm remove-widget" style="display: none;">
+                            X
+                        </button>
                         <ul class="list-group">
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 Uma vez Pedro Álvares Cabral disse...
@@ -214,6 +221,9 @@
                         <button class="btn btn-success mb-3">
                             <i class="bi bi-plus"></i> Novo aviso
                         </button>
+                        <button class="btn btn-danger btn-sm remove-widget" style="display: none;">
+                            X
+                        </button>
                         <ul class="list-group">
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 Uma vez Pedro Álvares Cabral disse...
@@ -247,58 +257,53 @@
                     `
                 },
             ]
-
-
+            
             dashboard.on('added', function (event, items) {
+                dashboard.batchUpdate();
+
                 items.forEach((item) => {
                     let widgetIndex = parseInt(item.el.dataset.widgetIndex, 10);
-                    let widget = Widgets[widgetIndex - 1];
+                    let widget = Widgets.find(w => w.widgetIndex === widgetIndex);
+                    console.log(item.el.gridstackNode);
+                    
+                    if (widget) {
+                        let widgetContent = widget.content; 
+                        let widgetElement = item.el.querySelector('.grid-stack-item-content');
+                        widgetElement.innerHTML = widgetContent;
 
-                    item.w = widget.w;
-                    item.h = widget.h;
-                    item.x = widget.x;
-                    item.y = widget.y;
-                    item.el.innerHTML = widget.content;
-                    item.content = widget.content;
+                        dashboard.update(item.el, { x: widget.x, y: widget.y, w: widget.w, h: widget.h, widgetIndex: widgetIndex });
+                    }
+                });
+                dashboard.commit(); 
+            });
+
+
+            dashboard.on('change', function (event, items) {
+                let layout = dashboard.save();
+
+                const finalLayout = layout.map(item => {
+                    let widgetElement = dashboard.getGridItems().find(el => {
+                        let node = el.gridstackNode;
+                        if(node.x === item.x && node.y === item.y && node.width === item.w && node.height === item.h){
+                            return item;
+                        }return 'f';
+                    });
+                    console.log(widgetElement);
+                    
+                    if (widgetElement) {
+                        item.widgetIndex = parseInt(widgetElement.getAttribute('data-widget-index'), 10);
+                    }
+                    return item;
+                });
+                console.log(finalLayout);
+                
+                saveBtn.addEventListener('click', function () {
+                    Livewire.dispatch('saveLayout', [finalLayout]);
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
                 });
             });
-
-            dashboard.on('change', function(event, items){
-                const layout = [];
-                items.forEach((item)=>{
-                    let widgetIndex = parseInt(item.el.dataset.widgetIndex, 10);      //TENTANDO FAZER ESSA DESGRAÇA CONCATENAR AS DUAS ARRAY DE OBJETOS PRA ENVIAR TUDO CERTO.
-                    let widget = Widgets[widgetIndex-1];
-                        item.el.innerHTML = widget.content;
-                        item.content = widget.content;
-                        if(!item.content){
-                            console.log('nao tem ');
-                            
-                        }
-                    layout.push(widget)                    
-                    const newLayout = dashboard.save();
-                    const cc = layout.concat(newLayout);
-                    console.log(item);
-                })
-            });
-
-            // dashboard.on('change', function(event, items) {
-            //     const newLayout = dashboard.save();
-            //     const widgets = [];  
-
-            //     items.forEach(function(item) {
-            //         const widget = {
-            //             id: item.id, 
-            //             content: item.el.innerHTML, 
-            //             x: item.x, 
-            //             y: item.y, 
-            //             width: item.width, 
-            //             height: item.height,
-            //         };
-            //         widgets.push(widget);
-            //     });
-                
-            //     Livewire.dispatch('saveLayout', [newLayout] );
-            // });
         });
     </script>
 </body>

@@ -10,6 +10,7 @@ class DashboardEditor extends Component
 {
     public $layout;
     protected $listeners = ['saveLayout' => 'saveLayout'];
+
     public function mount()
     {
         $guest_id = request()->cookie('guest_id');
