@@ -36,7 +36,7 @@
                 </div>
                 <div class="grid-stack-item" data-widget="calendario" gs-w="12" gs-h="6" gs-x="0" gs-y="12" data-widget-index="3">
                     <div class="grid-stack-item-content bg-light p-3 border">
-                        📅 Calendário
+                        📅 Teste
                     </div>
                 </div>
             </div>
@@ -49,6 +49,18 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
+
+            dashboardItems.forEach((item) => {
+                let widgetIndex = item.dataset.widgetIndex;
+                
+                if (widgetIndex) {
+                    let sidebarItem = document.querySelector(`#right-sidebar .grid-stack-item[data-widget-index="${widgetIndex}"]`);
+                    if (sidebarItem) {
+                        sidebarItem.remove();
+                    }
+                }
+            });
             let dashboard = GridStack.init({
                 cellHeight: 100,
                 minRow: 10,
@@ -60,6 +72,7 @@
             let sidebarGrid = GridStack.init({
                 float: false,
                 disableResize : true,
+                acceptWidgets: true,
             }, '#right-sidebar');
 
             GridStack.setupDragIn('#right-sidebar .grid-stack-item', { appendTo: 'body', helper: 'clone' });
@@ -270,7 +283,8 @@
                         let widgetContent = widget.content; 
                         let widgetElement = item.el.querySelector('.grid-stack-item-content');
                         widgetElement.innerHTML = widgetContent;
-
+                        item.el.gridstackNode.widgetIndex = widgetIndex;
+                        
                         dashboard.update(item.el, { x: widget.x, y: widget.y, w: widget.w, h: widget.h, widgetIndex: widgetIndex });
                     }
                 });
@@ -282,21 +296,19 @@
                 let layout = dashboard.save();
 
                 const finalLayout = layout.map(item => {
-                    let widgetElement = dashboard.getGridItems().find(el => {
-                        let node = el.gridstackNode;
-                        if(node.x === item.x && node.y === item.y && node.width === item.w && node.height === item.h){
-                            return item;
-                        }return 'f';
-                    });
-                    console.log(widgetElement);
+                    let node = dashboard.engine.nodes.find(n => 
+                        n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
+                    );
                     
-                    if (widgetElement) {
-                        item.widgetIndex = parseInt(widgetElement.getAttribute('data-widget-index'), 10);
+                    if (node) {
+                        item.widgetIndex = node.el.dataset.widgetIndex;                        
                     }
+
                     return item;
                 });
+
                 console.log(finalLayout);
-                
+
                 saveBtn.addEventListener('click', function () {
                     Livewire.dispatch('saveLayout', [finalLayout]);
                     setTimeout(() => {
@@ -304,6 +316,7 @@
                     }, 500);
                 });
             });
+
         });
     </script>
 </body>
