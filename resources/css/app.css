@@ -2,14 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-
-.grid-stack-item:hover .remove-widget {
-    display: block !important;
-}
-
 .grid-stack {
     background-color: #f4f4f4;
     border: 1px solid #ccc;
+}
+
+.grid-stack-item {
+    cursor: move;
 }
 
 .grid-stack-item-content {
@@ -20,59 +19,31 @@
     box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
     text-align: center;
     cursor: grab;
+    transition: transform 0.2s ease-in-out;
 }
 
-/* Sidebar fixa e colapsável */
-.right-sidebar {
-    border-left: 1px solid #ccc;
-    padding: 15px;
-    background-color: #fff;
-    position: fixed;
-    top: 0;
-    right: -320px;
-    width: 300px;
-    height: 100%;
-    overflow-y: auto;
-    transition: right 0.3s ease-in-out;
-    z-index: 1050;
-}
-
-.right-sidebar.active {
-    right: 0;
-}
-
-.sidebar-toggle {
-    position: fixed;
-    top: 20px;
-    right: 10px;
-    z-index: 1100;
-}
-
-.save-layout{
-    position: fixed;
-    top: 10px;
-    right: 200px;
-    z-index: 1100;
+.grid-stack-item:hover .remove-widget {
+    display: block !important;
 }
 
 .grid-stack-item-content:active {
     box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+    transform: scale(1.05);
 }
 
-/* Sidebar fixa e colapsável */
 .right-sidebar {
-    border-left: 1px solid #ccc;
-    padding: 15px;
-    background-color: #fff;
     position: fixed;
     top: 0;
     right: -320px;
     width: 300px;
     height: 100%;
     overflow-y: auto;
+    background-color: #fff;
+    padding: 15px;
+    border-left: 1px solid #ccc;
     transition: right 0.3s ease-in-out;
-    z-index: 1050;
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+    z-index: 1050;
 }
 
 .right-sidebar.active {
@@ -90,26 +61,6 @@
     color: #666;
 }
 
-.grid-stack-item {
-    cursor: move;
-}
-
-/* Estilos para os widgets no painel lateral */
-#right-sidebar .grid-stack-item-content {
-    background-color: #f7f7f7;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 12px;
-    text-align: center;
-    margin-bottom: 15px;
-    transition: background-color 0.3s ease-in-out;
-}
-
-#right-sidebar .grid-stack-item-content:hover {
-    background-color: #e0e0e0;
-}
-
-/* Personalizar botão da sidebar */
 .sidebar-toggle {
     position: fixed;
     top: 20px;
@@ -129,7 +80,20 @@
     background-color: #0056b3;
 }
 
-/* Estilização dos widgets */
+#right-sidebar .grid-stack-item-content {
+    background-color: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 12px;
+    text-align: center;
+    margin-bottom: 15px;
+    transition: background-color 0.3s ease-in-out;
+}
+
+#right-sidebar .grid-stack-item-content:hover {
+    background-color: #e0e0e0;
+}
+
 .news-item {
     background-color: #fff;
     padding: 15px;
@@ -164,7 +128,6 @@
     border-radius: 50%;
 }
 
-/* Avisos */
 .list-group-item {
     display: flex;
     justify-content: space-between;
@@ -185,7 +148,6 @@
     background-color: #dcdcdc;
 }
 
-/* Estilo do botão de novo aviso */
 .btn-success {
     background-color: #28a745;
     border-color: #28a745;
@@ -197,17 +159,11 @@
     border-color: #1e7e34;
 }
 
-/* Resposta visual de interação com a sidebar */
 #main-dashboard .grid-stack-item-content,
 #right-sidebar .grid-stack-item-content {
     transition: transform 0.2s ease-in-out;
 }
 
-.grid-stack-item-content:active {
-    transform: scale(1.05);
-}
-
-/* Ajustes responsivos */
 @media (max-width: 767px) {
     .sidebar-toggle {
         top: 10px;

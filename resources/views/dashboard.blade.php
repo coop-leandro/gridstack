@@ -17,7 +17,7 @@
             </div>
         </div>
         <button id="save-layout" class="btn btn-success save-layout mt-3">Salvar Layout</button>
-        <button id="toggle-sidebar" class="btn btn-primary sidebar-toggle">Personalizar</button>
+        <button id="toggle-sidebar" class="btn btn-primary sidebar-toggle">Adicionar Widgets</button>
 
         <div id="sidebar" class="right-sidebar">
             <h5>Personalizar Layout</h5>
@@ -51,7 +51,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
 
-            dashboardItems.forEach((item) => {
+            dashboardItems.forEach((item) => { //função para nao permitir duplicação de widget
                 let widgetIndex = item.dataset.widgetIndex;
                 
                 if (widgetIndex) {
@@ -61,32 +61,45 @@
                     }
                 }
             });
-            let dashboard = GridStack.init({
+
+            let dashboard = GridStack.init({ //inicializa o grid do dashboard
                 cellHeight: 100,
                 minRow: 10,
                 acceptWidgets: true,
                 float: true,
-                draggable: true,
+                disableResize: true,
+                disableDrag: true
             }, '#main-dashboard');
 
-            let sidebarGrid = GridStack.init({
-                float: false,
+            let sidebarGrid = GridStack.init({ //inicializa o grid da sidebar
+                float: true,
                 disableResize : true,
                 acceptWidgets: true,
             }, '#right-sidebar');
 
-            GridStack.setupDragIn('#right-sidebar .grid-stack-item', { appendTo: 'body', helper: 'clone' });
+            GridStack.setupDragIn('#right-sidebar .grid-stack-item', { appendTo: 'body', helper: 'clone' }); //permite arrastar de um grid para outro
 
             const sidebar = document.getElementById('sidebar');
             const toggleButton = document.getElementById('toggle-sidebar');
 
             toggleButton.addEventListener('click', function () {
-                sidebar.classList.toggle('active');
-                toggleButton.textContent = sidebar.classList.contains('active') ? 'Fechar' : 'Personalizar';
+                const isActive = sidebar.classList.toggle('active');
+                toggleButton.textContent = isActive ? 'Fechar' : 'Adicionar Widgets';
+
+                if (isActive) {
+                    dashboard.enable(); 
+                    dashboard.enableMove(true);
+                    dashboard.enableResize(true); 
+                } else {
+                    dashboard.disable(); 
+                    dashboard.enableMove(false);
+                    dashboard.enableResize(false); 
+                }
             });
 
             const saveBtn = document.getElementById('save-layout');
-
+        
+            //pré-definição dos widgets 
             const Widgets = [
                 {   
                     widgetIndex: 1,
@@ -95,12 +108,12 @@
                     w: 6,
                     h: 7,
                     content:`
-                        <h4 class="d-flex align-items-center mb-3">
-                            <i class="bi bi-newspaper me-2"></i> Notícias
-                        </h4>
                         <button class="btn btn-danger btn-sm remove-widget" style="display: none;">
                             X
                         </button>
+                        <h4 class="d-flex align-items-center mb-3">
+                            <i class="bi bi-newspaper me-2"></i> Notícias
+                        </h4>
                         <div class="news-item d-flex align-items-center border-bottom pb-3 mb-3">
                             <img src="https://picsum.photos/250/150" class="img-fluid rounded me-3" alt="Notícia">
                             <div class="news-content w-100">
@@ -180,14 +193,14 @@
                     w: 3,
                     h: 4,
                     content: `
+                        <button class="btn btn-danger btn-sm remove-widget" style="display: none;">
+                            X
+                        </button>
                         <h4 class="d-flex align-items-center mb-3">
-                        <i class="bi bi-exclamation-triangle me-2"></i> Avisos
+                            <i class="bi bi-exclamation-triangle me-2"></i> Avisos
                         </h4>
                         <button class="btn btn-success mb-3">
                             <i class="bi bi-plus"></i> Novo aviso
-                        </button>
-                        <button class="btn btn-danger btn-sm remove-widget" style="display: none;">
-                            X
                         </button>
                         <ul class="list-group">
                             <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -228,14 +241,14 @@
                     w: 3,
                     h: 4,
                     content: `
+                        <button class="btn btn-danger btn-sm remove-widget" style="display: none;">
+                            X
+                        </button>
                         <h4 class="d-flex align-items-center mb-3">
                         <i class="bi bi-exclamation-triangle me-2"></i> Avisos
                         </h4>
                         <button class="btn btn-success mb-3">
                             <i class="bi bi-plus"></i> Novo aviso
-                        </button>
-                        <button class="btn btn-danger btn-sm remove-widget" style="display: none;">
-                            X
                         </button>
                         <ul class="list-group">
                             <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -271,13 +284,13 @@
                 },
             ]
             
-            dashboard.on('added', function (event, items) {
+            dashboard.on('added', function (event, items) { //função que adiciona os widgets dentro do grid
                 dashboard.batchUpdate();
 
                 items.forEach((item) => {
                     let widgetIndex = parseInt(item.el.dataset.widgetIndex, 10);
                     let widget = Widgets.find(w => w.widgetIndex === widgetIndex);
-                    console.log(item.el.gridstackNode);
+                    //console.log(item.el.gridstackNode);
                     
                     if (widget) {
                         let widgetContent = widget.content; 
@@ -291,8 +304,7 @@
                 dashboard.commit(); 
             });
 
-
-            dashboard.on('change', function (event, items) {
+            dashboard.on('change', function (event, items) { //função disparada toda vez que é modificado a posição de um widget
                 let layout = dashboard.save();
 
                 const finalLayout = layout.map(item => {
@@ -307,7 +319,7 @@
                     return item;
                 });
 
-                console.log(finalLayout);
+                //console.log(finalLayout);
 
                 saveBtn.addEventListener('click', function () {
                     Livewire.dispatch('saveLayout', [finalLayout]);
