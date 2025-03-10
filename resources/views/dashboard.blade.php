@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Personalizável</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/gridstack/4.0.0/gridstack.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" integrity="sha512-dPXYcDub/aeb08c63jRq/k6GaKccl256JQy/AnOq7CAnEZ9FzSL9wSbcZkMp4R26vBsMLFYH4kQ67/bbV8XaCQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
     @vite(['resources/js/app.js'])
     @livewireStyles
@@ -94,6 +95,58 @@
                     dashboard.disable(); 
                     dashboard.enableMove(false);
                     dashboard.enableResize(false); 
+                }
+            });
+            
+            document.addEventListener('click', function (event) {
+                if (event.target.classList.contains('remove-widget')) {
+                    let widget = event.target.closest('.grid-stack-item');
+                    let widgetIndex = widget.dataset.widgetIndex;
+
+                    dashboard.removeWidget(widget, true);
+
+                    let sidebarItem = document.createElement('div');
+                    sidebarItem.className = 'grid-stack-item';
+                    sidebarItem.setAttribute('data-widget-index', widgetIndex);
+                    sidebarItem.setAttribute('gs-w', '12');
+                    sidebarItem.setAttribute('gs-h', '6');
+                    sidebarItem.setAttribute('gs-x', '0');
+                    sidebarItem.setAttribute('gs-y', '0');
+                    sidebarItem.innerHTML = `
+                        <div class="grid-stack-item-content bg-light p-3 border">
+                            ${widget.querySelector('.grid-stack-item-content').innerHTML}
+                        </div>
+                    `;
+
+                    document.getElementById('right-sidebar').appendChild(sidebarItem);
+
+                    sidebarGrid.makeWidget(sidebarItem);
+
+                    dashboard.batchUpdate(); 
+                    dashboard.engine.nodes = dashboard.engine.nodes.filter(node => node.el !== widget); 
+                    dashboard.commit(); 
+
+                    let layout = dashboard.save(); 
+                    const finalLayout = layout.map(item => {
+                        let node = dashboard.engine.nodes.find(n => 
+                            n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
+                        );
+                        
+                        if (node) {
+                            item.widgetIndex = node.el.dataset.widgetIndex;                        
+                        }
+
+                        return item;
+                    });
+
+                    console.log(finalLayout);
+
+                    saveBtn.addEventListener('click', function () {
+                        Livewire.dispatch('saveLayout', [finalLayout]);
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    });
                 }
             });
 
@@ -319,7 +372,7 @@
                     return item;
                 });
 
-                //console.log(finalLayout);
+                console.log(finalLayout);
 
                 saveBtn.addEventListener('click', function () {
                     Livewire.dispatch('saveLayout', [finalLayout]);
