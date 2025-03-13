@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+.header{
+    position: fixed;
+    top: 0;
+    z-index: 1000;
+    background-color: black;
+    width: 100%;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    gap: 20px;
+    padding-right: 40px;
+}
+
 .grid-stack {
     background-color: #f4f4f4;
     border: 1px solid #ccc;
@@ -22,8 +36,16 @@
     transition: transform 0.2s ease-in-out;
 }
 
+.remove-widget{
+    display: none;
+}
+
 .grid-stack-item:hover .remove-widget {
     display: block !important;
+}
+
+#right-sidebar .grid-stack-item:hover .remove-widget {
+    display: none !important;
 }
 
 .grid-stack-item-content:active {
@@ -62,9 +84,6 @@
 }
 
 .sidebar-toggle {
-    position: fixed;
-    top: 20px;
-    right: 10px;
     z-index: 1100;
     background-color: #007bff;
     color: #fff;
@@ -75,9 +94,28 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s ease-in-out;
 }
+.save-layout{
 
-.sidebar-toggle:hover {
-    background-color: #0056b3;
+    z-index: 1100;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease-in-out;
+}
+.sidebar-toggle-2 {
+    z-index: 1100;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease-in-out;
 }
 
 #right-sidebar .grid-stack-item-content {

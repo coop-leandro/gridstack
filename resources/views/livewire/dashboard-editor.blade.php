@@ -12,7 +12,13 @@
                             data-widget-index = "{{ $item->widgetIndex }}"
                             >
                             <div class="grid-stack-item-content bg-light p-3 border">
-                                {!! $item->content !!}
+                                @if ($item->widgetIndex == 'noticias')
+                                    @livewire('noticias')
+                                @elseif($item->widgetIndex == 'avisos')
+                                    @livewire('avisos')
+                                @else 
+                                    {!! $item->content !!}
+                                @endif
                             </div>
                         </div>
                     @else   

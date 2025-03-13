@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cookie;
 class DashboardEditor extends Component
 {
     public $layout;
+    public $noticias;
     protected $listeners = ['saveLayout' => 'saveLayout'];
 
     public function mount()
@@ -34,7 +35,7 @@ class DashboardEditor extends Component
             ['layout' => $layoutJson] 
         );
 
-        session()->flash('message', 'Layout salvo com sucesso!');
+        session()->flash('layoutSaved', 'Layout salvo com sucesso!');
     }
 
     public function render()
