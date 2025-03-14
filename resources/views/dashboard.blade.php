@@ -19,12 +19,13 @@
             <button id="save-layout" class="btn btn-success save-layout mt-3">Salvar Layout</button>
             <button id="toggle-sidebar" class="btn btn-primary sidebar-toggle">Adicionar Widgets</button>
             <button id="personalize" class="btn btn-primary sidebar-toggle-2">Editar</button>
+            <button id="reset-layout" class="btn btn-danger">Resetar Layout</button>
         </header>
         <div id="sidebar" class="right-sidebar">
             <h5>Personalizar Layout</h5>
             <p>Arraste os blocos para o dashboard.</p>
             <button id="close-sidebar" class="btn btn-primary mb-3 mt-3 sidebar-toggle">fechar</button>
-
+            @livewire('search-bar')
             <div id="right-sidebar" class="grid-stack">
                 <div class="grid-stack-item" data-widget="noticias" gs-w="12" gs-h="6" gs-x="0" gs-y="0" data-widget-index="noticias">
                     <div class="grid-stack-item-content bg-light p-3 border">
@@ -48,6 +49,18 @@
         document.addEventListener('DOMContentLoaded', function () {
             let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
 
+            const defaultLayout = [
+                { x: 0, y: 0, w: 3, h: 3, widgetIndex: 'noticias' },
+                { x: 3, y: 0, w: 3, h: 3, widgetIndex: 'avisos' }
+            ];
+
+            function resetLayout() {// Função para restaurar o layout
+                Livewire.dispatch('saveLayout', [defaultLayout]);
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+            }
+
             dashboardItems.forEach((item) => { //função para nao permitir duplicação de widget
                 let widgetIndex = item.dataset.widgetIndex;
                 
@@ -61,26 +74,30 @@
 
             let dashboard = GridStack.init({ //inicializa o grid do dashboard
                 cellHeight: 100,
-                minRow: 10,
+                minRow: 3,
                 acceptWidgets: true,
                 float: true,
                 disableResize: true,
                 disableDrag: true
             }, '#main-dashboard');
-
+            
             let sidebarGrid = GridStack.init({ //inicializa o grid da sidebar
                 float: true,
                 disableResize : true,
                 acceptWidgets: true,
             }, '#right-sidebar');
-
+            
             GridStack.setupDragIn('#right-sidebar .grid-stack-item', { appendTo: 'body', helper: 'clone' }); //permite arrastar de um grid para outro
-
+            
+            const saveBtn = document.getElementById('save-layout');
             const sidebar = document.getElementById('sidebar');
             const toggleButton = document.getElementById('toggle-sidebar');
             const personalizeBtn = document.getElementById('personalize');
             const closeSidebar = document.getElementById('close-sidebar');
+            const resetLayoutBtn = document.getElementById('reset-layout');
             let isEditing = false;
+
+            resetLayoutBtn.addEventListener('click', resetLayout);
 
             closeSidebar.addEventListener('click', function(){
                 const isActive = sidebar.classList.toggle('active');
@@ -117,7 +134,7 @@
                 isEditing = !isEditing;
             });
 
-            document.addEventListener('click', function (event) {
+            document.addEventListener('click', function (event) { //função para habilitar a função de remoção de widget do dashboard para a sidebar
                 if (event.target.classList.contains('remove-widget')) {
                     let widget = event.target.closest('.grid-stack-item');
                     let widgetIndex = widget.dataset.widgetIndex;
@@ -168,10 +185,8 @@
                     });
                 }
             });
-
-            const saveBtn = document.getElementById('save-layout');
         
-            dashboard.on('added', function (event, items) { 
+            dashboard.on('added', function (event, items) { //função para inicializar os widgets quando adicionados ao dashboard
                 dashboard.batchUpdate();
 
                 items.forEach((item) => {
@@ -186,7 +201,7 @@
                 dashboard.commit();
             });
 
-            dashboard.on('change', function (event, items) { 
+            dashboard.on('change', function (event, items) { //função para atualizar o layout toda vez que houver qualquer mudança nos widgets
                 let layout = dashboard.save();
 
                 layout.forEach(item => {
@@ -198,7 +213,7 @@
                         item.widgetIndex = node.el.dataset.widgetIndex || null;
                     }
                 });
-
+                console.log(layout);
                 saveBtn.addEventListener('click', function () {
                     Livewire.dispatch('saveLayout', [layout]);
                     setTimeout(() => {
@@ -207,26 +222,32 @@
                 }); 
             });
 
-            dashboard.on('drag', function (event, item) { 
-                let newWidth = 3;  
-                let newHeight = 3;
-                
+            const widgetSizes = { //pre-definição de dimensoes dos widgets
+                noticias: { w: 3, h: 3 },
+                avisos: { w: 3, h: 3 },
+            };
+
+            dashboard.on('drag', function (event, item) { //função para atualizar as dimensoes dos widgets em tempo real
+                let widgetIndex = item.getAttribute('data-widget-index'); 
+                if (!widgetIndex) return; 
+
+                let { w: newWidth, h: newHeight } = widgetSizes[widgetIndex] || { w: 3, h: 3 };
+
                 let itemX = parseInt(item.getAttribute('gs-x'));
                 let itemY = parseInt(item.getAttribute('gs-y'));
-                
+
                 let node = dashboard.engine.nodes.find(n => n.x == itemX && n.y == itemY);
                 
                 if (node) {
-                    let widgetIndex = item.getAttribute('data-widget-index'); 
                     node.w = newWidth;
                     node.h = newHeight;
                     node.widgetIndex = widgetIndex;
 
-                    dashboard.update(node, { w: newWidth, h: newHeight, widgetIndex: widgetIndex });
-                    
+                    dashboard.update(node.el, { w: newWidth, h: newHeight, widgetIndex: widgetIndex });
                     dashboard.commit();
                 }
-            });    
+            });
+   
         });
     </script>
 </body>
