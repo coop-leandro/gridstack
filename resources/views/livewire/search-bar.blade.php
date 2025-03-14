@@ -1,5 +1,5 @@
 <div>
-   <input wire:model.live.debounce.500ms="search" class="form-control mb-3 p-2 w-70 border border-gray-300 rounded shadow-sm" type="search" placeholder="Pesquisar o nome do widget..." aria-label="Search">
+   <input wire:model.live.100ms="search" class="form-control mb-3 p-2 w-70 border border-gray-300 rounded shadow-sm" type="search" placeholder="Pesquisar o nome do widget..." aria-label="Search">
 </div>
 
 <script>
