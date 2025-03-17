@@ -17,7 +17,7 @@ class Noticias extends Component
     ];
 
     public function mount(){
-        $this->noticias = Noticia::all();
+        $this->noticias = Noticia::orderBy('created_at', 'asc')->limit(5)->get();
     }
 
     public function createNews(){
@@ -31,7 +31,7 @@ class Noticias extends Component
         $this->titulo = '';
         $this->conteudo = '';
 
-        $this->noticias = Noticia::all()->take(5);
+        $this->noticias = Noticia::orderBy('created_at', 'asc')->limit(5)->get();
 
     }
     

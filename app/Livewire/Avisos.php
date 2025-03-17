@@ -17,7 +17,7 @@ class Avisos extends Component
     ];
 
     public function mount(){
-        $this->avisos = Aviso::all()->take(5);
+        $this->avisos = Aviso::orderBy('created_at', 'asc')->limit(5)->get();
     }
 
     public function createNotice(){
@@ -31,7 +31,13 @@ class Avisos extends Component
         $this->titulo = '';
         $this->mensagem = '';
 
-        $this->avisos = Aviso::all()->take(5);
+        $this->avisos = Aviso::orderBy('created_at', 'asc')->limit(5)->get();
+    }
+
+    public function deleteNotice($id){
+        Aviso::findOrFail($id)->delete();
+
+        $this->avisos = Aviso::orderBy('created_at', 'asc')->limit(5)->get();
     }
 
     public function render()

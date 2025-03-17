@@ -16,8 +16,10 @@
                                     @livewire('noticias')
                                 @elseif($item->widgetIndex == 'avisos')
                                     @livewire('avisos')
-                                @else 
-                                    {!! $item->content !!}
+                                @elseif($item->widgetIndex == 'feed')
+                                    @livewire('feeds')
+                                @else
+                                    @livewire('widgets-ex')
                                 @endif
                             </div>
                         </div>

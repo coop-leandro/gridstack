@@ -19,7 +19,7 @@
             <button id="save-layout" class="btn btn-success save-layout mt-3">Salvar Layout</button>
             <button id="toggle-sidebar" class="btn btn-primary sidebar-toggle">Adicionar Widgets</button>
             <button id="personalize" class="btn btn-primary sidebar-toggle-2">Editar</button>
-            <button id="reset-layout" class="btn btn-danger">Resetar Layout</button>
+            <button id="reset-layout" class="btn btn-danger p-2">Resetar Layout</button>
         </header>
         <div id="sidebar" class="right-sidebar">
             <h5>Personalizar Layout</h5>
@@ -37,6 +37,16 @@
                         @livewire('avisos')
                     </div>
                 </div>
+                <div class="grid-stack-item" data-widget="feed" gs-w="12" gs-h="6" gs-x="0" gs-y="12" data-widget-index="feed">
+                    <div class="grid-stack-item-content bg-light p-3 border">
+                        @livewire('feeds')
+                    </div>
+                </div>
+                <div class="grid-stack-item" data-widget="wdiget" gs-w="12" gs-h="6" gs-x="0" gs-y="18" data-widget-index="widget">
+                    <div class="grid-stack-item-content bg-light p-3 border">
+                        @livewire('widgets-ex')
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -50,8 +60,10 @@
             let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
 
             const defaultLayout = [
-                { x: 0, y: 0, w: 3, h: 3, widgetIndex: 'noticias' },
-                { x: 3, y: 0, w: 3, h: 3, widgetIndex: 'avisos' }
+                { x: 6, y: 0, w: 3, h: 3, widgetIndex: 'noticias' },
+                { x: 9, y: 0, w: 3, h: 3, widgetIndex: 'avisos' },
+                { x: 0, y: 0, w: 6, h: 8, widgetIndex: 'feed' },
+                { x: 9, y: 0, w: 6, h: 5, widgetIndex: 'widget' }
             ];
 
             function resetLayout() {// Função para restaurar o layout
@@ -223,15 +235,17 @@
             });
 
             const widgetSizes = { //pre-definição de dimensoes dos widgets
-                noticias: { w: 3, h: 3 },
-                avisos: { w: 3, h: 3 },
+                noticias: { w: 3, h: 5 },
+                avisos: { w: 3, h: 5 },
+                feed: { w: 3, h: 5 },
+                widget: { w: 2, h: 5 },
             };
 
             dashboard.on('drag', function (event, item) { //função para atualizar as dimensoes dos widgets em tempo real
                 let widgetIndex = item.getAttribute('data-widget-index'); 
                 if (!widgetIndex) return; 
-
-                let { w: newWidth, h: newHeight } = widgetSizes[widgetIndex] || { w: 3, h: 3 };
+                
+                let { w: newWidth, h: newHeight } = widgetSizes[widgetIndex] || { w: 3, h: 5 };
 
                 let itemX = parseInt(item.getAttribute('gs-x'));
                 let itemY = parseInt(item.getAttribute('gs-y'));
@@ -247,7 +261,6 @@
                     dashboard.commit();
                 }
             });
-   
         });
     </script>
 </body>
