@@ -24,10 +24,9 @@
             <div class="list-group">
                 @foreach ($avisos as $aviso)
                     <div class="list-group-item list-group-item-action flex-column align-items-start shadow-sm mb-2">
-                        <div class="">
-                            <h5 class="mb-1">{{ $aviso->titulo }}</h5>
-                            <p class="mb-1 text-muted">{{ $aviso->mensagem }}</p>
-                        </div>
+                        <h5 class="mb-1">{{ $aviso->titulo }}</h5>
+                        <p class="mb-1 text-muted">{{ $aviso->mensagem }}</p>
+                        <button wire:click="deleteNotice({{ $aviso->id }})" class="btn btn-danger deleteAviso ">X</button>
                     </div>
                 @endforeach
             </div>

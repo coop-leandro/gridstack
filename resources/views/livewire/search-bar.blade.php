@@ -4,13 +4,12 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        Livewire.on('searchUpdated', searchValue => {
+        Livewire.on('searchUpdated', searchValue => {            
             document.querySelectorAll('#right-sidebar .grid-stack-item').forEach(widget => {
                 let widgetIndex = widget.getAttribute('data-widget-index').toLowerCase();
-                
-                if (widgetIndex.includes(searchValue) || searchValue === '') {
+                if (widgetIndex.includes(searchValue)) {
                     widget.style.display = 'block';
-                    widget.setAttribute('gs-y', 0);                    
+                    widget.setAttribute('gs-y', 0);                                       
                 } else {
                     widget.style.display = 'none';
                 }
