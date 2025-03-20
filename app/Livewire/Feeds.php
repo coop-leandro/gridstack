@@ -29,7 +29,7 @@ class Feeds extends Component
         ]);
 
         $this->titulo = '';
-        $this->desc = '';
+        $this->descricao = '';
 
         $this->feeds = Feed::orderBy('created_at', 'asc')->limit(5)->get();
     }

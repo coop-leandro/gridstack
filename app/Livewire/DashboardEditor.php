@@ -35,7 +35,6 @@ class DashboardEditor extends Component
             ['layout' => $layoutJson] 
         );
 
-        session()->flash('layoutSaved', 'Layout salvo com sucesso!');
     }
 
     public function render()

@@ -8,20 +8,22 @@
     @vite(['resources/js/app.js', 'resources/css/app.css'])
     @livewireStyles
 </head>
-<body>
-    <div class="container-fluid">
-        <div class="row mt-5">
-            <div class="col-md-12">
-                @livewire('dashboard-editor')
+<body>   
+        @livewire('dashboard-editor')
+        <header class="header d-flex justify-between">  
+            <div>
+                <button id="toggle-left-sidebar" class="btn bg-white ms-5">
+                    <img src="https://img.icons8.com/?size=100&id=36389&format=png&color=000000" alt="" class="w-6 h-6">
+                </button>  
+            </div> 
+            <div>
+                <button id="save-layout" class="btn btn-success save-layout mt-3">Salvar Layout</button>
+                <button id="toggle-sidebar" class="btn btn-primary sidebar-toggle">Adicionar Widgets</button>
+                <button id="personalize" class="btn btn-primary sidebar-toggle-2">Editar</button>
+                <button id="reset-layout" class="btn btn-danger p-2">Resetar Layout</button>
             </div>
-        </div>
-        <header class="header">
-            <button id="save-layout" class="btn btn-success save-layout mt-3">Salvar Layout</button>
-            <button id="toggle-sidebar" class="btn btn-primary sidebar-toggle">Adicionar Widgets</button>
-            <button id="personalize" class="btn btn-primary sidebar-toggle-2">Editar</button>
-            <button id="reset-layout" class="btn btn-danger p-2">Resetar Layout</button>
         </header>
-        <div id="sidebar" class="right-sidebar">
+        <div id="sidebar" class="right-sidebar" wire:ignore>
             <h5>Personalizar Layout</h5>
             <p>Arraste os blocos para o dashboard.</p>
             <button id="close-sidebar" class="btn btn-primary mb-3 mt-3 sidebar-toggle">fechar</button>
@@ -29,22 +31,22 @@
             <div id="right-sidebar" class="grid-stack">
                 <div class="grid-stack-item" data-widget="noticias" gs-w="12" gs-h="6" gs-x="0" gs-y="0" data-widget-index="noticias">
                     <div class="grid-stack-item-content bg-light p-3 border">
-                        @livewire('noticias')
+                        <h1>Noticias</h1>
                     </div>
                 </div>
                 <div class="grid-stack-item" data-widget="avisos" gs-w="12" gs-h="6" gs-x="0" gs-y="6" data-widget-index="avisos">
                     <div class="grid-stack-item-content bg-light p-3 border">
-                        @livewire('avisos')
+                        <h1>Avisos</h1>
                     </div>
                 </div>
                 <div class="grid-stack-item" data-widget="feed" gs-w="12" gs-h="6" gs-x="0" gs-y="12" data-widget-index="feed">
                     <div class="grid-stack-item-content bg-light p-3 border">
-                        @livewire('feeds')
+                        <h1>Feed</h1>
                     </div>
                 </div>
                 <div class="grid-stack-item" data-widget="wdiget" gs-w="12" gs-h="6" gs-x="0" gs-y="18" data-widget-index="widget">
                     <div class="grid-stack-item-content bg-light p-3 border">
-                        @livewire('widgets-ex')
+                        <h1>Exemplo</h1>
                     </div>
                 </div>
             </div>
@@ -52,7 +54,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
     @livewireScripts
 
     <script>
@@ -60,17 +62,34 @@
             let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
 
             const defaultLayout = [
-                { x: 6, y: 0, w: 3, h: 3, widgetIndex: 'noticias' },
-                { x: 9, y: 0, w: 3, h: 3, widgetIndex: 'avisos' },
-                { x: 0, y: 0, w: 6, h: 8, widgetIndex: 'feed' },
-                { x: 9, y: 0, w: 6, h: 5, widgetIndex: 'widget' }
+                { x: 9, y: 12, w: 3, h: 6, widgetIndex: 'noticias' },
+                { x: 9, y: 6, w: 3, h: 6, widgetIndex: 'avisos' },
+                { x: 0, y: 0, w: 9, h: 18, widgetIndex: 'feed' },
+                { x: 9, y: 0, w: 3, h: 6, widgetIndex: 'widget' }
             ];
+console.log(defaultLayout);
 
+            
             function resetLayout() {// Função para restaurar o layout
                 Livewire.dispatch('saveLayout', [defaultLayout]);
                 setTimeout(() => {
                     location.reload();
                 }, 500);
+            }
+
+            function getLivewireComponent(widgetIndex) {// Retorna o componente Livewire correspondente ao widgetIndex
+                switch (widgetIndex) {
+                    case 'noticias':
+                        return `@livewire('noticias')`;
+                    case 'avisos':
+                        return `@livewire('avisos')`;
+                    case 'feed':
+                        return `@livewire('feeds')`;
+                    case 'widget':
+                        return `@livewire('widgets-ex')`;
+                    default:
+                        return '';
+                }
             }
 
             dashboardItems.forEach((item) => { //função para nao permitir duplicação de widget
@@ -92,18 +111,21 @@
                 disableResize: true,
                 disableDrag: true
             }, '#main-dashboard');
-            
+    
             let sidebarGrid = GridStack.init({ //inicializa o grid da sidebar
                 float: true,
                 disableResize : true,
                 acceptWidgets: true,
             }, '#right-sidebar');
             
+            
             GridStack.setupDragIn('#right-sidebar .grid-stack-item', { appendTo: 'body', helper: 'clone' }); //permite arrastar de um grid para outro
             
             const saveBtn = document.getElementById('save-layout');
             const sidebar = document.getElementById('sidebar');
+            const leftSidebar = document.getElementById('left-sidebar');
             const toggleButton = document.getElementById('toggle-sidebar');
+            const toggleLeftSidebar = document.getElementById('toggle-left-sidebar');            
             const personalizeBtn = document.getElementById('personalize');
             const closeSidebar = document.getElementById('close-sidebar');
             const resetLayoutBtn = document.getElementById('reset-layout');
@@ -115,6 +137,10 @@
                 const isActive = sidebar.classList.toggle('active');
             })
             
+            toggleLeftSidebar.addEventListener('click', function(){
+                leftSidebar.classList.toggle('active')
+            })
+
             toggleButton.addEventListener('click', function () {
                 const isActive = sidebar.classList.toggle('active');
 
@@ -151,7 +177,7 @@
                     let widget = event.target.closest('.grid-stack-item');
                     let widgetIndex = widget.dataset.widgetIndex;
 
-                    dashboard.removeWidget(widget, true);
+                    widget.style.display = 'none';                    
 
                     let sidebarItem = document.createElement('div');
                     sidebarItem.className = 'grid-stack-item';
@@ -162,7 +188,7 @@
                     sidebarItem.setAttribute('gs-y', '0');
                     sidebarItem.innerHTML = `
                         <div class="grid-stack-item-content bg-light p-3 border">
-                            ${widget.querySelector('.grid-stack-item-content').innerHTML}
+                            <h1>${widgetIndex}</h1>
                         </div>
                     `;
 
@@ -204,9 +230,9 @@
                 items.forEach((item) => {
                     let widgetIndex = item.el.dataset.widgetIndex;
                     
-                    if (widgetIndex) {
-                        item.el.gridstackNode.widgetIndex = widgetIndex;
-                        dashboard.update(item.el, { widgetIndex: widgetIndex });
+                    if (widgetIndex) { //transforma o widget padrao em um conteudo livewire quando arrastado
+                        let livewireComponent = getLivewireComponent(widgetIndex);
+                        item.el.querySelector('.grid-stack-item-content').innerHTML = livewireComponent;
                     }
                 });
 
@@ -231,14 +257,14 @@
                     setTimeout(() => {
                         location.reload();
                     }, 500);
-                }); 
+                });
             });
 
             const widgetSizes = { //pre-definição de dimensoes dos widgets
                 noticias: { w: 3, h: 5 },
                 avisos: { w: 3, h: 5 },
-                feed: { w: 3, h: 5 },
-                widget: { w: 2, h: 5 },
+                feed: { w: 9, h: 18, },
+                widget: { w: 3, h: 5, },
             };
 
             dashboard.on('drag', function (event, item) { //função para atualizar as dimensoes dos widgets em tempo real
