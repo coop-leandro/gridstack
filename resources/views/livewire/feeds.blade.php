@@ -9,9 +9,19 @@
                 </div>
             </div>
         
-            <button class="bg-red-500 text-white px-3 py-1 remove-widget rounded hover:bg-red-600">
-                X
-            </button>
+            <div class="absolute top-2 right-2 flex space-x-2 text-xl">
+                <button class="remove-widget p-4 text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i>
+                </button>
+    
+                <button class="fix-widget text-yellow-500 hover:text-yellow-700">
+                    <i class="fas fa-thumbtack"></i>
+                </button>
+    
+                <button class="resize-widget text-green-500 hover:text-green-700">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+            </div>
         </div>
     
         <div class="bg-white p-4 rounded-lg ">
@@ -57,10 +67,6 @@
                     <h6 class="text-[15px] text-gray-500">Jornalista, Cooperja</h6>
                 </div>
             </div>
-        
-            <button class="bg-red-500 text-white px-3 py-1 remove-widget rounded hover:bg-red-600">
-                X
-            </button>
         </div>
     
         <div class="bg-white p-4 rounded-lg ">

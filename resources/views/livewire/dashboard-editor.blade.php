@@ -46,7 +46,7 @@
             </ul>
         </div>
     </div>
-        <div id="main-dashboard" class="grid-stack">a
+        <div id="main-dashboard" class="grid-stack">
             @foreach($layout as $item)
                 @if (isset($item))
                     <div class="grid-stack-item"

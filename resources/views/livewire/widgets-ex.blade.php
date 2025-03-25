@@ -1,8 +1,18 @@
 <div data-widget-index="widget">
-    <button class="bg-red-500 text-white px-3 py-1 remove-widget rounded hover:bg-red-600">
-        X
-    </button>
-    <div class="w-[350px] h-[400px] bg-white rounded-lg p-4">
+    <div class="absolute top-2 right-2 flex space-x-2 text-xl">
+        <button class="remove-widget text-red-500 hover:text-red-700">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <button class="fix-widget text-yellow-500 hover:text-yellow-700">
+            <i class="fas fa-thumbtack"></i>
+        </button>
+
+        <button class="resize-widget text-green-500 hover:text-green-700">
+            <i class="fas fa-expand-arrows-alt"></i>
+        </button>
+    </div>
+    <div class="w-[430px] h-[400px] bg-white rounded-lg p-4">
         <h1 class="text-[20px] font-bold mb-4">Aniversariantes do Dia</h1>
     
         <div class="space-y-4">
