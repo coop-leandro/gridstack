@@ -1,15 +1,15 @@
 <div data-widget-index="widget">
     <div class="absolute top-2 right-2 flex space-x-2 text-xl">
-        <button class="remove-widget text-red-500 hover:text-red-700">
-            <i class="fas fa-times"></i>
+        <button class="remove-widget p-2 text-red-500 hover:text-red-700">
+            <i class="remove-widget fas fa-times"></i>
         </button>
 
-        <button class="fix-widget text-yellow-500 hover:text-yellow-700">
-            <i class="fas fa-thumbtack"></i>
+        <button id="fix-widget" class="fix-widget p-2 text-yellow-500 hover:text-yellow-700">
+            <i class="fas fix-widget fa-thumbtack"></i>
         </button>
 
-        <button class="resize-widget text-green-500 hover:text-green-700">
-            <i class="fas fa-expand-arrows-alt"></i>
+        <button class="resize-widget p-2 text-green-500 hover:text-green-700">
+            <i class="fas resize-widget fa-expand-arrows-alt"></i>
         </button>
     </div>
     <div class="w-[430px] h-[400px] bg-white rounded-lg p-4">

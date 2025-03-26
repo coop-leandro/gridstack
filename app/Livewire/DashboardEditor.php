@@ -103,7 +103,6 @@ class DashboardEditor extends Component
             ['guest_id' => $userId],
             ['layout' => $layoutJson] 
         );
-
         foreach ($layout as $item) {
             WidgetLog::logUsage($item['widgetIndex']);
         }

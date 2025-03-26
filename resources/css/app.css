@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+.icon-disabled{
+    color: gray;
+    text-decoration: line-through;
+}
+
 .left-sidebar {
     position: fixed;
     top: 90px; 
@@ -116,7 +121,6 @@
 
 .grid-stack-item-content:active {
     box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
-    transform: scale(1.05);
 }
 
 .right-sidebar {

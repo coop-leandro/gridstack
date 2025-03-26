@@ -186,7 +186,10 @@
             </div>
         </div>
     </div>
-    @livewire('widget-logs')
+
+    @if ($isManager)
+        @livewire('widget-logs')
+    @endif
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
     @livewireScripts
@@ -255,6 +258,8 @@
             const personalizeBtn = document.getElementById('personalize');
             const closeSidebar = document.getElementById('close-sidebar');
             const resetLayoutBtn = document.getElementById('reset-layout');
+            const fixWidget = document.getElementById('fix-widget')
+
             let isEditing = false;
 
             if (setDefaultBtn) {
@@ -320,12 +325,62 @@
                 isEditing = !isEditing;
             });
 
+            document.addEventListener('click', function (event) {
+                if (event.target.classList.contains('fix-widget')) {
+                    let widget = event.target.closest('.grid-stack-item');
+
+                    if (widget) {
+                        let widgetIndex = widget.dataset.widgetIndex; // Obtém o index do widget
+                        let item = dashboard.engine.nodes.find(n => n.el === widget); // Encontra o widget correto
+
+                        if (item) {
+                            let isLocked = item.noMove && item.noResize && item.locked;
+
+                            dashboard.update(widget, {
+                                noMove: !isLocked,     
+                                noResize: !isLocked,
+                                locked: !isLocked,
+                                widgetIndex: widgetIndex
+                            });
+
+                            event.target.classList.toggle('icon-disabled', !isLocked);
+
+                            //console.log(`Widget ${widgetIndex} foi ${!isLocked ? 'fixado' : 'desfixado'}`);
+
+                            let layout = dashboard.save(); 
+                                const finalLayout = layout.map(item => {
+                                    let node = dashboard.engine.nodes.find(n => 
+                                        n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
+                                    );
+                                    console.log(node);
+                                    
+                                    if (node) {
+                                        item.widgetIndex = node.el.dataset.widgetIndex;                        
+                                    }
+
+                                    return item;
+                                });
+
+                                console.log(finalLayout);
+
+                                saveBtn.addEventListener('click', function () {
+                                    Livewire.dispatch('saveLayout', [finalLayout]);
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 500);
+                                });
+                        }
+                    }
+                }
+            });
+
+
             document.addEventListener('click', function (event) { //função para habilitar a função de remoção de widget do dashboard para a sidebar
                 if (event.target.classList.contains('remove-widget')) {
                     let widget = event.target.closest('.grid-stack-item');
                     let widgetIndex = widget.dataset.widgetIndex;
-                    console.log(widget);
                     
+                    console.log(event.target);
 
                     widget.style.display = 'none';                    
 
