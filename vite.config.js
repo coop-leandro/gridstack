@@ -8,4 +8,15 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        watch: {
+            usePolling: true,
+            interval: 100,
+        },
+        host: '0.0.0.0',
+        hmr: {
+            host: 'localhost',
+        },
+        cache: false, 
+    },
 });

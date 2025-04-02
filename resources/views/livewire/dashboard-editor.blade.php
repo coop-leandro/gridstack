@@ -55,8 +55,42 @@
                         gs-x="{{ $item->x }}"
                         gs-y="{{ $item->y }}"
                         data-widget-index = "{{ $item->widgetIndex }}"
+                        data-locked-from-sector="{{ $item->locked_from_sector }}"
+                        gs-no-move="{{ $item->locked ?? false ? 'true' : 'false' }}"
+                        gs-no-resize="{{ $item->locked ?? false ? 'true' : 'false' }}"
+                        gs-locked="{{ $item->locked ?? false ? 'true' : 'false' }}"
                         >
                         <div class="grid-stack-item-content p-3 ">
+                            <div class="absolute bulk-actions top-2 right-2 flex space-x-2 text-xl">
+                                @if($item->locked_from_sector && !$isManager)
+                                    <button class="remove-widget p-2 text-red-500 hover:text-red-700 icon-disabled icon-disabled-sector" disabled>
+                                        <i class="remove-widget fas fa-times"></i>
+                                    </button>
+               
+                                    <button class="resize-widget p-2 text-green-500 hover:text-green-700 icon-disabled icon-disabled-sector" disabled>
+                                        <i class="fas resize-widget fa-expand-arrows-alt"></i>
+                                    </button>
+                                @elseif($isManager)
+                                    <button class="remove-widget p-2 text-red-500 hover:text-red-700">
+                                        <i class="remove-widget fas fa-times"></i>
+                                    </button>
+                                    
+                                    <button class="fix-widget p-2 text-yellow-500 hover:text-yellow-700">
+                                        <i class="fas fix-widget fa-thumbtack"></i>
+                                    </button>
+                
+                                    <button class="resize-widget p-2 text-green-500 hover:text-green-700">
+                                        <i class="fas resize-widget fa-expand-arrows-alt"></i>
+                                    </button>
+                                @else
+                                    <button class="remove-widget p-2 text-red-500 hover:text-red-700">
+                                        <i class="remove-widget fas fa-times"></i>
+                                    </button>
+                                    <button class="resize-widget p-2 text-green-500 hover:text-green-700">
+                                        <i class="fas resize-widget fa-expand-arrows-alt"></i>
+                                    </button>
+                                @endif
+                            </div>
                             @if ($item->widgetIndex == 'noticias')
                                 @livewire('noticias')
                             @elseif($item->widgetIndex == 'avisos')

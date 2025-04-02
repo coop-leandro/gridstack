@@ -17,17 +17,17 @@
                     <img src="https://img.icons8.com/?size=100&id=36389&format=png&color=000000" alt="Ícone de Menu" class="w-6 h-6">
                 </button>  
             </div>
-        
             <div class="d-flex align-items-center gap-3">
                 @if ($isManager)
                     <div class="btn-container">
                         <button id="set-default" class="btn btn-outline-secondary save-layout p-2">Setar Default</button>
                     </div>
                 @endif
-                
-                <div class="btn-container">
-                    <button id="save-layout" class="btn btn-primary save-layout p-2">Salvar Layout</button>
-                </div>
+                @if (!$isManager)
+                    <div class="btn-container">
+                        <button id="save-layout" class="btn btn-primary save-layout p-2">Salvar Layout</button>
+                    </div>
+                @endif
         
                 <div class="btn-container">
                     <button id="toggle-sidebar" class="btn btn-primary sidebar-toggle p-2">Adicionar Widgets</button>
@@ -39,7 +39,8 @@
         
                 <div class="btn-container">
                     <button id="reset-layout" class="btn btn-danger p-2">Resetar Layout</button>
-                </div>
+                </div>    
+
             </div>
         </header>
         
@@ -54,7 +55,7 @@
                         <h1>Noticias</h1>
                     </div>
                 </div> --}}
-                <div class="grid-stack-item" data-widget="avisos" gs-w="12" gs-h="18" gs-x="0" gs-y="0" data-widget-index="avisos">
+                <div class="grid-stack-item" data-locked-from-sector data-widget="avisos" gs-w="12" gs-h="18" gs-x="0" gs-y="0" data-widget-index="avisos">
                     <div class="grid-stack-item-content bg-light border">
                         <div class="w-[220px] h-[400px] p-3 rounded-lg">
                             <h1 class="text-[20px] font-bold mb-4">Avisos Gerais</h1>
@@ -102,7 +103,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" data-widget="feed" gs-w="12" gs-h="18" gs-x="0" gs-y="18" data-widget-index="feed">
+                <div class="grid-stack-item" data-locked-from-sector data-widget="feed" gs-w="12" gs-h="18" gs-x="0" gs-y="18" data-widget-index="feed">
                     <div class="grid-stack-item-content bg-light border">
                         <div class="p-2 w-[220px] h-[400px]">
                             <div class="flex justify-between items-center mb-2">
@@ -145,7 +146,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" data-widget="wdiget" gs-w="12" gs-h="18" gs-x="0" gs-y="32" data-widget-index="widget">
+                <div class="grid-stack-item" data-locked-from-sector data-widget="wdiget" gs-w="12" gs-h="18" gs-x="0" gs-y="32" data-widget-index="widget">
                     <div class="grid-stack-item-content bg-light border">
                         <div class="w-[220px] h-[400px] p-3 bg-white rounded-lg">
                             <h1 class="text-[20px] font-bold mb-4">Aniversariantes do Dia</h1>
@@ -192,17 +193,42 @@
     @endif
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @livewireScripts
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const Toast = Swal.mixin({
+                toast: true,          
+                position: 'top-end',    
+                showConfirmButton: false, 
+                timer: 2000,          
+                timerProgressBar: true
+            });
+
             let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
+            document.querySelectorAll(".bulk-actions button").forEach(button => {
+                button.addEventListener("click", function (event) {
+                    if (button.classList.contains("icon-disabled-sector")) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        Toast.fire({
+                            icon: 'error',
+                            title: 'Ação não permitida'
+                        })
+                    }
+                });
+            });
 
             function resetLayout() {// Função para restaurar o layout
-                Livewire.dispatch('resetLayout');
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Layout resetado'
+                })
                 setTimeout(() => {
-                    location.reload();
-                }, 500);
+                    Livewire.dispatch('resetLayout');
+                    setTimeout(() => location.reload(), 500);
+                }, 2000)
             }
 
             function getLivewireComponent(widgetIndex) {// Retorna o componente Livewire correspondente ao widgetIndex
@@ -258,7 +284,6 @@
             const personalizeBtn = document.getElementById('personalize');
             const closeSidebar = document.getElementById('close-sidebar');
             const resetLayoutBtn = document.getElementById('reset-layout');
-            const fixWidget = document.getElementById('fix-widget')
 
             let isEditing = false;
 
@@ -270,17 +295,29 @@
                             n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
                         );
 
-                        if (node && !item.widgetIndex && node.el) {                         
-                            item.widgetIndex = node.el.dataset.widgetIndex || null;
+                        if (node) {
+                            if (node.locked) {
+                                item.locked_from_sector = true; 
+                                node.locked_from_sector = true;
+                            } else {
+                                item.locked_from_sector = false; 
+                                node.locked_from_sector = false;
+                            }
+
+                            if (!item.widgetIndex && node.el) {
+                                item.widgetIndex = node.el.dataset.widgetIndex || null;
+                            }
                         }
                     });
                     console.log(layout);
-
-                    Livewire.dispatch('setDefaultLayoutSector', [layout]);
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Layout do setor atualizado com sucesso!'
+                    })
                     setTimeout(() => {
-                        location.reload();
-                    }, 500);
-
+                        Livewire.dispatch('setDefaultLayoutSector', [layout]);
+                        setTimeout(() => location.reload(), 500);
+                    }, 2000)
                 });
             }
 
@@ -308,7 +345,7 @@
                 }
             });
 
-            personalizeBtn.addEventListener('click', function () {
+            personalizeBtn.addEventListener('click', function () { //funcao para habilitar a personlização do layout
                 if (!isEditing) {
                     dashboard.enable(); 
                     dashboard.enableMove(true); 
@@ -325,14 +362,18 @@
                 isEditing = !isEditing;
             });
 
-            document.addEventListener('click', function (event) {
+            document.addEventListener('click', function (event) { //funcao para as funcionalidades de fixar/desfixar, e habilitar/desabilitar os widgets especificos.
+                let widget = event.target.closest('.grid-stack-item');
+                if(!widget){
+                    return;
+                }
+                let widgetIndex = widget.dataset.widgetIndex;
+                let item = dashboard.engine.nodes.find(n => n.el === widget);
+                let lockedFromSector = widget.dataset.lockedFromSector
+
                 if (event.target.classList.contains('fix-widget')) {
-                    let widget = event.target.closest('.grid-stack-item');
 
                     if (widget) {
-                        let widgetIndex = widget.dataset.widgetIndex; // Obtém o index do widget
-                        let item = dashboard.engine.nodes.find(n => n.el === widget); // Encontra o widget correto
-
                         if (item) {
                             let isLocked = item.noMove && item.noResize && item.locked;
 
@@ -340,48 +381,74 @@
                                 noMove: !isLocked,     
                                 noResize: !isLocked,
                                 locked: !isLocked,
-                                widgetIndex: widgetIndex
+                                widgetIndex: widgetIndex,
+                                locked_from_sector: lockedFromSector
                             });
 
                             event.target.classList.toggle('icon-disabled', !isLocked);
-
-                            //console.log(`Widget ${widgetIndex} foi ${!isLocked ? 'fixado' : 'desfixado'}`);
+                            Toast.fire({
+                                icon: 'success',
+                                title: `Widget ${widgetIndex} foi ${!isLocked ? 'fixado' : 'desfixado'}`
+                            })
 
                             let layout = dashboard.save(); 
-                                const finalLayout = layout.map(item => {
-                                    let node = dashboard.engine.nodes.find(n => 
-                                        n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
-                                    );
-                                    console.log(node);
-                                    
-                                    if (node) {
-                                        item.widgetIndex = node.el.dataset.widgetIndex;                        
-                                    }
+                            const finalLayout = layout.map(item => {
+                                let node = dashboard.engine.nodes.find(n => 
+                                    n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
+                                );
+                                let fixed = node.locked
+                                if (node) {
+                                    item.widgetIndex = node.el.dataset.widgetIndex; 
+                                    item.locked = fixed;  
+                                    item.content = null  
+                                    item.locked_from_sector = node.el.dataset.lockedFromSector || false;                   
+                                }
 
-                                    return item;
-                                });
-
-                                console.log(finalLayout);
-
-                                saveBtn.addEventListener('click', function () {
+                                return item;
+                            });
+                            saveBtn.addEventListener('click', function () {
+                                Toast.fire({
+                                    icon: 'success',
+                                    title: 'Layout salvo com sucesso!'
+                                })
+                                setTimeout(() => {
                                     Livewire.dispatch('saveLayout', [finalLayout]);
-                                    setTimeout(() => {
-                                        location.reload();
-                                    }, 500);
-                                });
+                                    setTimeout(() => location.reload(), 500);
+                                }, 2000)
+                            });
                         }
                     }
                 }
+                if(event.target.classList.contains('resize-widget')){
+                    if (item && !lockedFromSector) {  // Permite redimensionamento se não estiver bloqueado pelo setor
+                        let isResizable = !item.noResize;
+                        dashboard.update(widget, { noResize: isResizable });
+                        Toast.fire({
+                            icon: 'success',
+                            title: `Redimensionamento de ${widgetIndex} foi ${isResizable ? 'desativado' : 'ativado'}`
+                        })
+                    } else {
+                        Toast.fire({
+                            icon: 'error',
+                            title: `Widget ${widgetIndex} não pode ser redimensionado pois está fixado pelo setor.`
+                        })
+                    }
+                }
             });
-
 
             document.addEventListener('click', function (event) { //função para habilitar a função de remoção de widget do dashboard para a sidebar
                 if (event.target.classList.contains('remove-widget')) {
                     let widget = event.target.closest('.grid-stack-item');
                     let widgetIndex = widget.dataset.widgetIndex;
+                    let lockedFromSector = widget.dataset.lockedFromSector; // Verifica se está bloqueado
+                    if (lockedFromSector) {
+                        Toast.fire({
+                            icon: 'error',
+                            title: `Widget ${widgetIndex} não pode ser removido pois está fixado pelo setor.`
+                        });
+                        return; 
+                    }
                     
-                    console.log(event.target);
-
                     widget.style.display = 'none';                    
 
                     let sidebarItem = document.createElement('div');
@@ -399,8 +466,12 @@
 
                     dashboard.batchUpdate(); 
                     dashboard.engine.nodes = dashboard.engine.nodes.filter(node => node.el !== widget); 
+                    console.log(dashboard.engine.nodes);                    
                     dashboard.commit(); 
-
+                    Toast.fire({
+                        icon: 'success',
+                        title: `${widgetIndex} removido com sucesso.`
+                    })
                     let layout = dashboard.save(); 
                     const finalLayout = layout.map(item => {
                         let node = dashboard.engine.nodes.find(n => 
@@ -408,19 +479,23 @@
                         );
                         
                         if (node) {
-                            item.widgetIndex = node.el.dataset.widgetIndex;                        
+                            item.widgetIndex = node.el.dataset.widgetIndex;  
+                            item.locked_from_sector = node.el.dataset.lockedFromSector                      
                         }
 
                         return item;
                     });
-
-                    console.log(finalLayout);
-
+                    //console.log(finalLayout);
+                    
                     saveBtn.addEventListener('click', function () {
-                        Livewire.dispatch('saveLayout', [finalLayout]);
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'Layout salvo com sucesso!'
+                        })
                         setTimeout(() => {
-                            location.reload();
-                        }, 500);
+                            Livewire.dispatch('saveLayout', [finalLayout]);
+                            setTimeout(() => location.reload(), 500);
+                        }, 2000)
                     });
                 }
             });
@@ -435,31 +510,49 @@
                         let livewireComponent = getLivewireComponent(widgetIndex);
                         item.el.querySelector('.grid-stack-item-content').innerHTML = livewireComponent;
                     }
+                    //console.log(item);
+                    
                 });
 
                 dashboard.commit();
             });
 
-            dashboard.on('change', function (event, items) { //função para atualizar o layout toda vez que houver qualquer mudança nos widgets
-                let layout = dashboard.save();
-
-                layout.forEach(item => {
+            dashboard.on('change', function(event, items) {
+                let allWidgets = dashboard.save();
+                let layoutToSave = [];
+                
+                // 2. Processa todos os widgets visíveis
+                allWidgets.forEach(item => {
                     let node = dashboard.engine.nodes.find(n => 
                         n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
                     );
-
-                    if (node && !item.widgetIndex && node.el) {                         
-                        item.widgetIndex = node.el.dataset.widgetIndex || null;
+                    
+                    if (node && !node.locked) {
+                        layoutToSave.push({
+                            x: node.x,
+                            y: node.y,
+                            w: node.w,
+                            h: node.h,
+                            widgetIndex: node.el?.dataset?.widgetIndex || node.widgetIndex || null,
+                            locked_from_sector: false,
+                            locked: false
+                        });
                     }
                 });
+
+                console.log('Todos widgets visíveis:', layoutToSave);
+
                 saveBtn.addEventListener('click', function () {
-                    Livewire.dispatch('saveLayout', [layout]);
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Layout salvo com sucesso!'
+                    })
                     setTimeout(() => {
-                        location.reload();
-                    }, 500);
+                        Livewire.dispatch('saveLayout', [layoutToSave]);
+                        setTimeout(() => location.reload(), 500);
+                    }, 2000)
                 });
             });
-
             const widgetSizes = { //pre-definição de dimensoes dos widgets
                 noticias: { w: 3, h: 5 },
                 avisos: { w: 3, h: 5 },

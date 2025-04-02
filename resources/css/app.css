@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Garante que o accordion não interfira no grid-stack */
+#right-sidebar .accordion {
+    background: transparent;
+    border: none;
+}
+
+#right-sidebar .accordion-item {
+    background: transparent;
+    border: none;
+}
+
+#right-sidebar .accordion-button {
+    padding: 0.5rem 1rem;
+    background-color: #f8f9fa;
+}
+
+#right-sidebar .accordion-body {
+    padding: 0;
+    background: transparent;
+}
+
+.bulk-actions{
+    display: none;
+}
+
+.grid-stack-item:hover .bulk-actions{
+    display: inline-flex;
+}
+
 .icon-disabled{
     color: gray;
     text-decoration: line-through;
