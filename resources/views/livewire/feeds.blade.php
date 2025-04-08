@@ -1,4 +1,4 @@
-<div data-widget-index="feed">
+<div data-widget-index="feed" data-category="comunicacao">
     <div class="p-4">
         <div class="flex justify-between items-center mb-4">
             <div class="flex justify-start space-x-2">

@@ -1,4 +1,4 @@
-<div data-widget-index="avisos">
+<div data-widget-index="avisos" data-category="comunicacao">
     <div class="w-[430px] h-[400px] bg-white rounded-lg p-4">
         <h1 class="text-[20px] font-bold mb-4">Avisos Gerais</h1>
 

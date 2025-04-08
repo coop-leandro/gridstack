@@ -19,7 +19,7 @@ class DashboardEditor extends Component
     protected $listeners = [
         'saveLayout' => 'saveLayout',
         'setDefaultLayoutSector' => 'setDefaultLayoutSector',
-        'resetLayout' => 'resetLayout'
+        'resetLayout' => 'resetLayout',
     ];
 
     public function mount()
@@ -49,7 +49,6 @@ class DashboardEditor extends Component
                 json_decode($sectorLayout->layout)
             );
         }
-
         return view('dashboard', [
             'layout' => $this->layout,
             'isManager' => $this->isManager
@@ -99,6 +98,7 @@ class DashboardEditor extends Component
 
     public function saveLayout($layout)
     {
+        //dd($layout);
         $userId = Auth::id();        
         GridStackLayout::updateOrCreate(
             ['guest_id' => $userId],
@@ -147,7 +147,6 @@ class DashboardEditor extends Component
             );
         } 
     }
-
 
     public function render()
     {

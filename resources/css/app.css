@@ -2,7 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Garante que o accordion não interfira no grid-stack */
+header{
+    background-color: #fff;
+}
+
 #right-sidebar .accordion {
     background: transparent;
     border: none;
@@ -114,7 +117,6 @@
     position: fixed;
     top: 0;
     z-index: 1000;
-    background-color: black;
     width: 100%;
     height: 90px;
     display: flex;

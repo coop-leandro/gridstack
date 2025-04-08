@@ -49,12 +49,14 @@
         <div id="main-dashboard" class="grid-stack">
             @foreach($layout as $item)
                 @if (isset($item))
+                {{-- @dd($item) --}}
                     <div class="grid-stack-item"
                         gs-w="{{ $item->w }}"
                         gs-h="{{ $item->h }}"
                         gs-x="{{ $item->x }}"
                         gs-y="{{ $item->y }}"
                         data-widget-index = "{{ $item->widgetIndex }}"
+                        data-category = "{{ $item->widgetCategory }}"
                         data-locked-from-sector="{{ $item->locked_from_sector }}"
                         gs-no-move="{{ $item->locked ?? false ? 'true' : 'false' }}"
                         gs-no-resize="{{ $item->locked ?? false ? 'true' : 'false' }}"
