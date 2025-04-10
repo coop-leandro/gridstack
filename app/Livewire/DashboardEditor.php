@@ -49,7 +49,7 @@ class DashboardEditor extends Component
                 json_decode($sectorLayout->layout)
             );
         }
-        return view('dashboard', [
+        return view('dashboard.index', [
             'layout' => $this->layout,
             'isManager' => $this->isManager
         ]);
