@@ -4,13 +4,24 @@
         Nenhum widget encontrado com o termo pesquisado.
     </div>
 </div>
-
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const originalState = new Map();
         const accordions = document.querySelectorAll('#right-sidebar .border.rounded-lg');
         
-        //Armazena estado inicial das listas
+        function reorganizeOnEmptySearch() { //função para reorganizar os widgets sempre do topo para baixo           
+            originalState.forEach((state, accordion) => {
+                accordion.style.display = state.display;
+
+                state.widgets.forEach(widgetState => {
+                    
+                    if (isWidgetActive(widgetState.element)) {
+                        widgetState.element.style.display = widgetState.display;
+                    }
+                });
+            });
+        }
+
         accordions.forEach(accordion => {
             originalState.set(accordion, {
                 display: accordion.style.display,
@@ -42,15 +53,7 @@
             accordions.forEach(accordion => accordion.style.display = 'none');
     
             if (searchTerm == '') {
-                originalState.forEach((state, accordion) => {
-                    accordion.style.display = state.display;
-                    state.widgets.forEach(widgetState => {
-                        if (isWidgetActive(widgetState.element)) {
-                            widgetState.element.style.display = widgetState.display;
-                            widgetState.element.setAttribute('gs-y', widgetState.y);
-                        }
-                    });
-                });
+                reorganizeOnEmptySearch(); 
                 return;
             }
     
@@ -122,4 +125,4 @@
             syncWidgets();
         });
     });
-    </script>
+</script>

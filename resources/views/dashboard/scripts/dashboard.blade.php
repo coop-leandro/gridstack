@@ -269,6 +269,7 @@
             toggleEdit();
         });
 
+        //funcionalidade de fixação, remoção e redimensionamento de widgets
         document.addEventListener('click', function (event) {
             let widget = event.target.closest('.grid-stack-item');
             if(!widget){
