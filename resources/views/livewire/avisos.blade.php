@@ -5,7 +5,6 @@
         <p class="text-[15px] mb-4">
             Regras para uso dos recados clique <a href="#" class="text-blue-500 hover:underline">aqui</a>.
         </p>
-    
         <div class="space-y-4">
             <div class="flex items-start space-x-2">
                 <div>

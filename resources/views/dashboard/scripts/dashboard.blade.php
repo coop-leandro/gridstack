@@ -1,5 +1,61 @@
-<script>    
+<script>
     document.addEventListener('DOMContentLoaded', function () {
+        //variaveis globais + definição de grids
+        const setDefaultBtn = document.getElementById('set-default');
+        const saveBtn = document.getElementById('save-layout');
+        const sidebar = document.getElementById('sidebar');
+        const leftSidebar = document.getElementById('left-sidebar');
+        const toggleButton = document.getElementById('toggle-sidebar');
+        const toggleLeftSidebar = document.getElementById('toggle-left-sidebar');            
+        const personalizeBtn = document.getElementById('personalize');
+        const closeSidebar = document.getElementById('close-sidebar');
+        const resetLayoutBtn = document.getElementById('reset-layout');
+        const categoryGrids = document.querySelectorAll('[data-category-grid]');
+        const categoryGridInstances = {};
+        const Toast = Swal.mixin({
+            toast: true,          
+            position: 'top-end',    
+            showConfirmButton: false, 
+            timer: 2000,          
+            timerProgressBar: true
+        });
+        let dashboard = GridStack.init({
+            cellHeight: 100,
+            minRow: 3,
+            acceptWidgets: true,
+            float: true,
+            disableResize: true,
+            disableDrag: true
+        }, '#main-dashboard');
+        let isEditing = false;
+        const widgetSizes = {
+            noticias: { w: 3, h: 5 },
+            avisos: { w: 3, h: 5 },
+            feed: { w: 9, h: 18, },
+            widget: { w: 3, h: 5, },
+        };
+        let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
+
+        //funções 
+        function reorganizeSidebarWidgets() {
+            Object.keys(categoryGridInstances).forEach(category => {
+                const categoryGrid = categoryGridInstances[category];
+                const widgets = categoryGrid.engine.nodes;
+                
+                widgets.sort((a, b) => a.y - b.y);
+                
+                let currentY = 0;
+                widgets.forEach(widget => {
+                    if (widget.y !== currentY) {
+                        categoryGrid.update(widget.el, { y: currentY });
+                    }
+                    currentY += widget.h;
+                });
+                
+                categoryGrid.commit();
+            });
+        }
+
         function removeDuplicateWidgetsFromCategories() {
             const dashboardWidgets = dashboard.engine.nodes.map(node => node.el.dataset.widgetIndex);
             
@@ -12,13 +68,14 @@
                     const widgetIndex = widget.el.dataset.widgetIndex;
                     
                     if (dashboardWidgets.includes(widgetIndex)) {
-                        categoryGrid.removeWidget(widget.el, true); // Remove completamente
+                        categoryGrid.removeWidget(widget.el, true); 
                         console.log(`Removido widget ${widgetIndex} da categoria ${category}`);
                     }
                 }
             });
             
             updateAllCounters();
+            reorganizeSidebarWidgets();
         }
 
         function countWidgets(categoryId) {
@@ -26,8 +83,7 @@
             if (!grid) return 0;
             return grid.querySelectorAll('.grid-stack-item').length;
         }
-
-        // Atualiza todos os contadores
+        
         function updateAllCounters() {
             const categories = ['comunicacao', 'financeiro', 'rh'];
             categories.forEach(category => {
@@ -37,31 +93,29 @@
                 }
             });
         }
-
-        // Observador para detectar mudanças nas grids
+        
         const observer = new MutationObserver(function(mutations) {
             updateAllCounters();
+            reorganizeSidebarWidgets();
         });
 
-        // Configura o observador para cada grid
         document.querySelectorAll('[data-category-grid]').forEach(grid => {
             observer.observe(grid, {
                 childList: true,
                 subtree: true
             });
         });
-        // Atualização inicial
+
         updateAllCounters();
 
-        // Atualiza quando uma categoria é aberta/fechada
         document.querySelectorAll('[data-category]').forEach(button => {
             button.addEventListener('click', function() {
-                setTimeout(updateAllCounters, 300); 
+                setTimeout(() => {
+                    updateAllCounters();
+                    reorganizeSidebarWidgets();
+                }, 300); 
             });
         });
-        const categoryGrids = document.querySelectorAll('[data-category-grid]');
-    
-        const categoryGridInstances = {};
 
         function initializeCategoryGrids() {
             const categoryGrids = document.querySelectorAll('[data-category-grid]');
@@ -83,20 +137,12 @@
                 //console.log(`Grid inicializado para categoria ${categoryName}`);
             });
 
+            reorganizeSidebarWidgets();
             return categoryGridInstances;
         }
+
         initializeCategoryGrids();  
 
-    
-        const Toast = Swal.mixin({
-            toast: true,          
-            position: 'top-end',    
-            showConfirmButton: false, 
-            timer: 2000,          
-            timerProgressBar: true
-        });
-
-        let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
         document.querySelectorAll(".bulk-actions button").forEach(button => {
             button.addEventListener("click", function (event) {
                 if (button.classList.contains("icon-disabled-sector")) {
@@ -109,7 +155,7 @@
                 }
             });
         });
-
+        
         function resetLayout() {
             Toast.fire({
                 icon: 'success',
@@ -120,22 +166,34 @@
                 setTimeout(() => location.reload(), 500);
             }, 2000)
         }
-
+        
         function getLivewireComponent(widgetIndex) {
-            switch (widgetIndex) {
-                case 'noticias':
-                    return `@livewire('noticias')`;
-                case 'avisos':
-                    return `@livewire('avisos')`;
-                case 'feed':
-                    return `@livewire('feeds')`;
-                case 'widget':
-                    return `@livewire('widgets-ex')`;
-                default:
-                    return '';
-            }
+            const components = {
+                noticias: `@livewire('noticias')`,
+                avisos: `@livewire('avisos')`,
+                feed: `@livewire('feeds')`,
+                widget: `@livewire('widgets-ex')`
+            };
+            return components[widgetIndex] || '';
         }
 
+        function toggleEdit() {
+            if (!isEditing) {
+                dashboard.enable(); 
+                dashboard.enableMove(true); 
+                dashboard.enableResize(true); 
+                dashboard.float(true); 
+                personalizeBtn.textContent = 'Finalizar Edição'; 
+            } else {
+                dashboard.disable(); 
+                dashboard.enableMove(false); 
+                dashboard.enableResize(false); 
+                dashboard.float(false); 
+                personalizeBtn.textContent = 'Editar';
+            }
+            isEditing = !isEditing;
+        }
+        
         dashboardItems.forEach((item) => {
             let widgetIndex = item.dataset.widgetIndex;
             
@@ -147,34 +205,7 @@
             }
         });
 
-        let dashboard = GridStack.init({
-            cellHeight: 100,
-            minRow: 3,
-            acceptWidgets: true,
-            float: true,
-            disableResize: true,
-            disableDrag: true
-        }, '#main-dashboard');
         removeDuplicateWidgetsFromCategories();
-
-        // let sidebarGrid = GridStack.init({
-        //     float: true,
-        //     disableResize : true,
-        //     acceptWidgets: true,
-        // }, '#right-sidebar');
-        
-                    
-        const setDefaultBtn = document.getElementById('set-default');
-        const saveBtn = document.getElementById('save-layout');
-        const sidebar = document.getElementById('sidebar');
-        const leftSidebar = document.getElementById('left-sidebar');
-        const toggleButton = document.getElementById('toggle-sidebar');
-        const toggleLeftSidebar = document.getElementById('toggle-left-sidebar');            
-        const personalizeBtn = document.getElementById('personalize');
-        const closeSidebar = document.getElementById('close-sidebar');
-        const resetLayoutBtn = document.getElementById('reset-layout');
-
-        let isEditing = false;
 
         if (setDefaultBtn) {
             setDefaultBtn.addEventListener('click', function () {
@@ -230,31 +261,12 @@
             sidebar.classList.toggle('translate-x-full');
 
             if (!sidebar.classList.contains('translate-x-full')) {
-                dashboard.enable(); 
-                dashboard.enableMove(true);
-                dashboard.enableResize(true); 
-            } else {
-                dashboard.disable(); 
-                dashboard.enableMove(false);
-                dashboard.enableResize(false); 
+                toggleEdit();
             }
         });
 
         personalizeBtn.addEventListener('click', function () {
-            if (!isEditing) {
-                dashboard.enable(); 
-                dashboard.enableMove(true); 
-                dashboard.enableResize(true); 
-                dashboard.float(true); 
-                personalizeBtn.textContent = 'Finalizar Edição'; 
-            } else {
-                dashboard.disable(); 
-                dashboard.enableMove(false); 
-                dashboard.enableResize(false); 
-                dashboard.float(false); 
-                personalizeBtn.textContent = 'Editar';
-            }
-            isEditing = !isEditing;
+            toggleEdit();
         });
 
         document.addEventListener('click', function (event) {
@@ -332,9 +344,6 @@
                     })
                 }
             }
-        });
-
-        document.addEventListener('click', function (event) {
             if (event.target.classList.contains('remove-widget')) {
                 let widget = event.target.closest('.grid-stack-item');
                 let widgetCategory = widget.dataset.category;
@@ -398,9 +407,12 @@
                         }, 2000)
                     });
                 }
+                
+                reorganizeSidebarWidgets();
             }
         });
-    
+
+        //funções de drag and drop do dashboard
         dashboard.on('added', function (event, items) {
             dashboard.batchUpdate();
 
@@ -416,6 +428,7 @@
             });
 
             dashboard.commit();
+            reorganizeSidebarWidgets();
         });
 
         dashboard.on('change', function(event, items) {
@@ -432,6 +445,9 @@
                     }
                 })
             });
+            
+            reorganizeSidebarWidgets();
+            
             let layoutToSave = [];
             
             allWidgets.forEach(item => {
@@ -480,13 +496,6 @@
 
         });
         
-        const widgetSizes = {
-            noticias: { w: 3, h: 5 },
-            avisos: { w: 3, h: 5 },
-            feed: { w: 9, h: 18, },
-            widget: { w: 3, h: 5, },
-        };
-
         dashboard.on('drag', function (event, item) {
             let widgetIndex = item.getAttribute('data-widget-index'); 
             let widgetCategory = item.getAttribute('data-category');
@@ -507,6 +516,8 @@
                 dashboard.update(node.el, { w: newWidth, h: newHeight, widgetIndex: widgetIndex });
                 dashboard.commit();
             }
+            
+            reorganizeSidebarWidgets();
         });
     });
 </script>
