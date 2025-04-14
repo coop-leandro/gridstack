@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+
     @livewire('dashboard-editor')
     
     <header class="flex justify-between header items-center px-4 py-3 bg-white">

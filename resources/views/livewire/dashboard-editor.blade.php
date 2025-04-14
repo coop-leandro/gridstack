@@ -1,4 +1,6 @@
 <div class="container-fluid flex mt-[90px]">
+    @livewire('notifications')    
+    
     <div class="left-sidebar" id="left-sidebar">
         <div class="sidebar-search p-3">
             <input type="text" placeholder="Search" class="w-full p-2 border border-gray-300 rounded-lg">
@@ -111,4 +113,3 @@
         </div>
     </div>
 </div>
-

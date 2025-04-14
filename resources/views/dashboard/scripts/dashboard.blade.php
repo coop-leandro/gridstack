@@ -11,14 +11,7 @@
         const closeSidebar = document.getElementById('close-sidebar');
         const resetLayoutBtn = document.getElementById('reset-layout');
         const categoryGrids = document.querySelectorAll('[data-category-grid]');
-        const categoryGridInstances = {};
-        const Toast = Swal.mixin({
-            toast: true,          
-            position: 'top-end',    
-            showConfirmButton: false, 
-            timer: 2000,          
-            timerProgressBar: true
-        });
+        const categoryGridInstances = {}
         let dashboard = GridStack.init({
             cellHeight: 100,
             minRow: 3,
@@ -37,6 +30,16 @@
         let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
 
         //funções 
+        
+        function notify(options) {
+            new FilamentNotification()
+                .title(options.title)
+                .body(options.body || '')
+                .status(options.status || 'success')
+                .duration(options.duration || 3000)
+                .send();
+        }
+        
         function reorganizeSidebarWidgets() {
             Object.keys(categoryGridInstances).forEach(category => {
                 const categoryGrid = categoryGridInstances[category];
@@ -69,7 +72,7 @@
                     
                     if (dashboardWidgets.includes(widgetIndex)) {
                         categoryGrid.removeWidget(widget.el, true); 
-                        console.log(`Removido widget ${widgetIndex} da categoria ${category}`);
+                        // console.log(`Removido widget ${widgetIndex} da categoria ${category}`);
                     }
                 }
             });
@@ -148,19 +151,19 @@
                 if (button.classList.contains("icon-disabled-sector")) {
                     event.preventDefault();
                     event.stopPropagation();
-                    Toast.fire({
-                        icon: 'error',
-                        title: 'Ação não permitida'
-                    })
+                    notify({
+                        title: 'Ação não permitida',
+                        status: 'danger'
+                    });
                 }
             });
         });
         
         function resetLayout() {
-            Toast.fire({
-                icon: 'success',
-                title: 'Layout resetado'
-            })
+            notify({
+                title: 'Layout resetado com sucesso!',
+                status: 'success'
+            });
             setTimeout(() => {
                 Livewire.dispatch('resetLayout');
                 setTimeout(() => location.reload(), 500);
@@ -236,10 +239,7 @@
                         }                            
                     }
                 });
-                Toast.fire({
-                    icon: 'success',
-                    title: 'Layout do setor atualizado com sucesso!'
-                })
+
                 setTimeout(() => {
                     Livewire.dispatch('setDefaultLayoutSector', [layout]);
                     setTimeout(() => location.reload(), 500);
@@ -295,11 +295,11 @@
                         });
 
                         event.target.classList.toggle('icon-disabled', !isLocked);
-                        Toast.fire({
-                            icon: 'success',
-                            title: `Widget ${widgetIndex} foi ${!isLocked ? 'fixado' : 'desfixado'}`
-                        })
-
+                    
+                        notify({
+                            title: `Widget ${widgetIndex} foi ${!isLocked ? 'fixado' : 'desfixado'}`,
+                            status: 'success'
+                        });
                         let layout = dashboard.save(); 
                         const finalLayout = layout.map(item => {
                             let node = dashboard.engine.nodes.find(n => 
@@ -317,16 +317,17 @@
                             return item;
                         });
                         
-                        setDefaultBtn.addEventListener('click', function () {
-                            Toast.fire({
-                                icon: 'success',
-                                title: 'Layout salvo com sucesso!'
-                            })
+                        setDefaultBtn.onclick = function () {
+                            notify({
+                                title: 'Layout salvo com sucesso!',
+                                status: 'success'
+                            });
+
                             setTimeout(() => {
                                 Livewire.dispatch('saveLayout', [finalLayout]);
                                 setTimeout(() => location.reload(), 500);
                             }, 2000)
-                        });
+                        };
                     }
                 }
             }
@@ -334,15 +335,15 @@
                 if (item && !lockedFromSector) {
                     let isResizable = !item.noResize;
                     dashboard.update(widget, { noResize: isResizable });
-                    Toast.fire({
-                        icon: 'success',
-                        title: `Redimensionamento de ${widgetIndex} foi ${isResizable ? 'desativado' : 'ativado'}`
-                    })
+                    notify({
+                        title: `Redimensionamento de ${widgetIndex} foi ${isResizable ? 'desativado' : 'ativado'}`,
+                        status: 'success'
+                    });
                 } else {
-                    Toast.fire({
-                        icon: 'error',
-                        title: `Widget ${widgetIndex} não pode ser redimensionado pois está fixado pelo setor.`
-                    })
+                    notify({
+                        title: `Widget ${widgetIndex} não pode ser redimensionado pois está fixado pelo setor.`,
+                        status: 'success'
+                    });
                 }
             }
             if (event.target.classList.contains('remove-widget')) {
@@ -352,9 +353,9 @@
                 
                 let lockedFromSector = widget.dataset.lockedFromSector;
                 if (lockedFromSector) {
-                    Toast.fire({
-                        icon: 'error',
-                        title: `Widget ${widgetIndex} não pode ser removido pois está fixado pelo setor.`
+                    notify({
+                        title: `Widget ${widgetIndex} não pode ser removido pois está fixado pelo setor.`,
+                        status: 'danger'
                     });
                     return; 
                 }
@@ -378,10 +379,11 @@
                 dashboard.batchUpdate(); 
                 dashboard.engine.nodes = dashboard.engine.nodes.filter(node => node.el !== widget); 
                 dashboard.commit(); 
-                Toast.fire({
-                    icon: 'success',
-                    title: `${widgetIndex} removido com sucesso.`
-                })
+                notify({
+                    title: `${widgetIndex} removido com sucesso.`,
+                    status: 'success'
+                });
+                
                 let layout = dashboard.save(); 
                 const finalLayout = layout.map(item => {
                     let node = dashboard.engine.nodes.find(n => 
@@ -397,16 +399,16 @@
                     return item;
                 });
                 if(isManager === false){
-                    saveBtn.addEventListener('click', function () {
-                        Toast.fire({
-                            icon: 'success',
-                            title: 'Layout salvo com sucesso!'
+                    saveBtn.onclick = function () {
+                        notify({
+                            title: 'Layout salvo com sucesso!',
+                            status: 'success'
                         })
                         setTimeout(() => {
                             Livewire.dispatch('saveLayout', [finalLayout]);
                             setTimeout(() => location.reload(), 500);
                         }, 2000)
-                    });
+                    };
                 }
                 
                 reorganizeSidebarWidgets();
@@ -472,27 +474,27 @@
             });
 
             if(isManager){
-                setDefaultBtn.addEventListener('click', function () {
-                    Toast.fire({
-                        icon: 'success',
-                        title: 'Layout salvo com sucesso!'
-                    })
+                setDefaultBtn.onclick = function () {
+                    notify({
+                        title: 'Layout do setor salvo com sucesso!',
+                        status: 'success'
+                    });
                     setTimeout(() => {
                         Livewire.dispatch('saveLayout', [layoutToSave]);
                         setTimeout(() => location.reload(), 500);
                     }, 2000)
-                });
+                };
             }else{
-                saveBtn.addEventListener('click', function () {
-                    Toast.fire({
-                        icon: 'success',
-                        title: 'Layout salvo com sucesso!'
-                    })
+                saveBtn.onclick = function () {
+                    notify({
+                        title: 'Layout salvo com sucesso!',
+                        status: 'success'
+                    });
                     setTimeout(() => {
                         Livewire.dispatch('saveLayout', [layoutToSave]);
                         setTimeout(() => location.reload(), 500);
                     }, 2000)
-                });
+                };
             }
 
         });
