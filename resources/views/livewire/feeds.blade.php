@@ -1,4 +1,5 @@
 <div data-widget-index="feed" data-category="comunicacao">
+    <h1 class="text-lg widget-title font-bold mb-2 md:text-xl">Feed</h1>
     <div class="p-4">
         <div class="flex justify-between items-center mb-4">
             <div class="flex justify-start space-x-2">
@@ -17,7 +18,7 @@
                 E a rede de varejo da Cooperja iniciou outra super campanha comemorativa aos 55 anos da cooperativa. A promoção vai premiar clientes e cooperados que comprarem nas lojas agropecuárias. Posto de combustíveis e supermer...
             </p>
             
-            <img src="https://picsum.photos/850/500" class="w-full h-auto mb-4" alt="Imagem de exemplo">
+            <img src="https://picsum.photos/850/400" class="w-full h-auto mb-4" alt="Imagem de exemplo">
             
             <div class="flex justify-between items-center">
                 <div class="flex space-x-4 text-[15px] text-gray-500">
