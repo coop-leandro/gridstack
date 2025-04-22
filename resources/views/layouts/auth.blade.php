@@ -29,7 +29,7 @@
     </style>
 </head>
 
-<body class="d-flex align-items-center py-4 bg-primary">
+<body class="d-flex align-items-center py-4">
     @yield('content')
 </body>
 

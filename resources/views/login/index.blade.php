@@ -1,7 +1,7 @@
 @extends('layouts.auth')
 
 @section('content')
-    <main class="form-signin w-100 m-auto text-center bg-light rounded">
+    <main class="form-signin w-100 m-auto text-center bg-slate-400 rounded">
 
         <h1 class="h3 mb-3 fw-normal">Login</h1>
 

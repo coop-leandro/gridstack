@@ -52,7 +52,7 @@ header{
     border-right: 1px solid #ccc; 
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2); 
     z-index: 1050;
-    transition: left 0.3s ease-in-out;
+    transition: left 0.3s ease-in-out !important;
 }
 
 .left-sidebar.active {
