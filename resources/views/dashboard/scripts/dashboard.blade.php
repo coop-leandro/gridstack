@@ -1,5 +1,122 @@
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function () { 
+
+        function reorganizeColumnAfterMinimize(widget) {
+            const widgetX = parseInt(widget.getAttribute('gs-x'));
+            const widgetW = parseInt(widget.getAttribute('gs-w'));
+            const widgetY = parseInt(widget.getAttribute('gs-y'));
+            const isMinimized = widget.classList.contains('widget-minimized');
+            
+            // Calcula o intervalo X do widget modificado
+            const widgetXStart = widgetX;
+            const widgetXEnd = widgetX + widgetW - 1;
+            
+            // Pega todos os widgets que compartilham o mesmo intervalo X
+            const affectedWidgets = Array.from(document.querySelectorAll('#main-dashboard .grid-stack-item'))
+                .filter(wid => {
+                    const x = parseInt(wid.getAttribute('gs-x'));
+                    const w = parseInt(wid.getAttribute('gs-w'));
+                    const xStart = x;
+                    const xEnd = x + w - 1;
+                    
+                    // Verifica sobreposição no eixo X
+                    return (xStart <= widgetXEnd && xEnd >= widgetXStart);
+                })
+                .sort((a, b) => parseInt(a.getAttribute('gs-y')) - parseInt(b.getAttribute('gs-y')));
+            
+            // Reorganiza apenas os widgets afetados
+            let currentY = 0;
+            affectedWidgets.forEach(w => {
+                const currentHeight = parseInt(w.getAttribute('gs-h'));
+                const currentX = parseInt(w.getAttribute('gs-x'));
+                
+                if (w === widget && !isMinimized) {
+                    currentY = widgetY;
+                } else {
+                    dashboard.update(w, { 
+                        y: currentY, 
+                        x: currentX, 
+                        h: w.classList.contains('widget-minimized') ? 2 : parseInt(w.dataset.originalHeight || w.getAttribute('gs-h'))
+                    });
+                }
+                
+                currentY += currentHeight;
+            });
+            
+            dashboard.commit();
+        }
+
+        function toggleWidgetMinimize(widget) {            
+            if (widget.dataset.lockedFromSector === '1') {
+                notify({
+                    title: 'Widget fixado não pode ser minimizado',
+                    status: 'danger'
+                });
+                return;
+            }
+            
+            const isMinimized = widget.classList.contains('widget-minimized');
+            const node = dashboard?.engine?.nodes?.find(n => n.el === widget);
+            
+            if (!node) return;
+            
+            // Guarda a altura original e o conteúdo completo
+            if (!widget.dataset.originalHeight) {
+                widget.dataset.originalHeight = node.h;
+            }
+            if (!widget.dataset.originalContent) {
+                widget.dataset.originalContent = widget.querySelector('.grid-stack-item-content').innerHTML;
+            }
+            
+            widget.classList.toggle('widget-minimized');
+            
+            const content = widget.querySelector('.grid-stack-item-content');
+            if (content) {
+                if (isMinimized) {
+                    content.innerHTML = widget.dataset.originalContent;
+                } else {
+                    const widgetTitle = widget.querySelector('.widget-title').textContent;
+                    const bulkActions = widget.querySelector('.bulk-actions');                    
+                    const icon = bulkActions.querySelector('.minimize-widget i');   
+                    if (icon) {
+                        icon.classList.toggle('fa-chevron-down');
+                        icon.classList.toggle('fa-chevron-up');
+                    }
+
+                    content.innerHTML = `
+                        <div class="flex items-center justify-between h-full px-3 bg-gray-50 border-l-4 border-blue-500 rounded">
+                            <div class="flex items-center min-w-0">
+                                <i class="fas fa-window-minimize mr-2 text-gray-400 text-sm"></i>
+                                <span class="font-medium text-gray-700 truncate">${widgetTitle}</span>
+                            </div>
+                            <div class="flex space-x-1 ml-2">
+                                ${bulkActions.outerHTML}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Atualiza a altura no grid
+            const newHeight = isMinimized ? parseInt(widget.dataset.originalHeight) : 2;
+            dashboard.update(widget, { h: newHeight });
+            
+            setTimeout(() => {
+                reorganizeColumnAfterMinimize(widget); 
+                reorganizeSidebarWidgets();
+            }, 100);
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.minimize-widget')) {
+                const widget = e.target.closest('.grid-stack-item');
+                if (widget) {
+                    toggleWidgetMinimize(widget);
+                } else {
+                    console.warn('Não foi possível encontrar o widget associado ao botão de minimizar');
+                }
+            }
+        });
         //variaveis globais + definição de grids
         const setDefaultBtn = document.getElementById('set-default');
         const saveBtn = document.getElementById('save-layout');
@@ -252,10 +369,11 @@
         closeSidebar.addEventListener('click', function(){
             sidebar.classList.toggle('translate-x-full');
         })
-        
-        toggleLeftSidebar.addEventListener('click', function(){
-            leftSidebar.classList.toggle('hidden')
-        })
+    
+
+        toggleLeftSidebar.onclick = function() {
+            leftSidebar.classList.toggle('active');
+        };
 
         toggleButton.addEventListener('click', function () {
             sidebar.classList.toggle('translate-x-full');
@@ -342,7 +460,7 @@
                 } else {
                     notify({
                         title: `Widget ${widgetIndex} não pode ser redimensionado pois está fixado pelo setor.`,
-                        status: 'success'
+                        status: 'danger'
                     });
                 }
             }
@@ -458,21 +576,29 @@
                     n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
                 );
                 
-                
                 if (node && !node.locked) {
+                    // Verifica se o widget está minimizado
+                    const isMinimized = node.el.classList.contains('widget-minimized');
+                    
+                    // Se estiver minimizado, usa a altura original
+                    const heightToSave = isMinimized ? 
+                        (parseInt(node.el.dataset.originalHeight) || node.h) : 
+                        node.h;
+                    
                     layoutToSave.push({
                         x: node.x,
                         y: node.y,
                         w: node.w,
-                        h: node.h,
+                        h: heightToSave, 
                         widgetCategory: node.widgetCategory,
                         widgetIndex: node.el?.dataset?.widgetIndex || node.widgetIndex || null,
                         locked_from_sector: false,
-                        locked: false
+                        locked: false,
+                        isMinimized: isMinimized 
                     });
                 }
             });
-
+                        
             if(isManager){
                 setDefaultBtn.onclick = function () {
                     notify({
@@ -496,7 +622,6 @@
                     }, 2000)
                 };
             }
-
         });
         
         dashboard.on('drag', function (event, item) {

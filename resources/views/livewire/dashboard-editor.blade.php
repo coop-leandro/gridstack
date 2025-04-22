@@ -70,7 +70,9 @@
                                     <button class="remove-widget p-2 text-red-500 hover:text-red-700 icon-disabled icon-disabled-sector" disabled>
                                         <i class="remove-widget fas fa-times"></i>
                                     </button>
-               
+                                    <button class="minimize-widget icon-disabled icon-disabled-sector p-2 text-blue-500 hover:text-blue-700" disabled>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
                                     <button class="resize-widget p-2 text-green-500 hover:text-green-700 icon-disabled icon-disabled-sector" disabled>
                                         <i class="fas resize-widget fa-expand-arrows-alt"></i>
                                     </button>
@@ -78,7 +80,9 @@
                                     <button class="remove-widget p-2 text-red-500 hover:text-red-700">
                                         <i class="remove-widget fas fa-times"></i>
                                     </button>
-                                    
+                                    <button class="minimize-widget p-2 text-blue-500 hover:text-blue-700">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
                                     <button class="fix-widget p-2 text-yellow-500 hover:text-yellow-700">
                                         <i class="fas fix-widget fa-thumbtack"></i>
                                     </button>
@@ -87,6 +91,9 @@
                                         <i class="fas resize-widget fa-expand-arrows-alt"></i>
                                     </button>
                                 @else
+                                    <button class="minimize-widget p-2 text-blue-500 hover:text-blue-700">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
                                     <button class="remove-widget p-2 text-red-500 hover:text-red-700">
                                         <i class="remove-widget fas fa-times"></i>
                                     </button>
