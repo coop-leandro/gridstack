@@ -132,6 +132,7 @@ class DashboardEditor extends Component
     }
 
     public function setDefaultLayoutSector($layout){
+        //dd($layout);
         $userId = Auth::id();
         $user = User::find($userId);
         $layoutJson = json_encode($layout);
