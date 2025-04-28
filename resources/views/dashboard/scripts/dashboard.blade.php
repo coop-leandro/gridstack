@@ -1,51 +1,161 @@
 <script>
-    document.addEventListener('DOMContentLoaded', function () { 
+    document.addEventListener('DOMContentLoaded', function () {
+        // ======================
+        // GLOBAL VARIABLES
+        // ======================
+        const setDefaultBtn = document.getElementById('set-default');
+        const saveBtn = document.getElementById('save-layout');
+        const sidebar = document.getElementById('sidebar');
+        const leftSidebar = document.getElementById('left-sidebar');
+        const toggleButton = document.getElementById('toggle-sidebar');
+        const toggleLeftSidebar = document.getElementById('toggle-left-sidebar');            
+        const personalizeBtn = document.getElementById('personalize');
+        const closeSidebar = document.getElementById('close-sidebar');
+        const resetLayoutBtn = document.getElementById('reset-layout');
+        const categoryGrids = document.querySelectorAll('[data-category-grid]');
+        const categoryGridInstances = {};
+        
+        let dashboard = GridStack.init({
+            cellHeight: 100,
+            minRow: 3,
+            acceptWidgets: true,
+            float: true,
+            disableResize: true,
+            disableDrag: true
+        }, '#main-dashboard');
+        
+        let isEditing = false;
+        let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
+        
+        const widgetSizes = {
+            noticias: { w: 3, h: 5 },
+            avisos: { w: 3, h: 5 },
+            feed: { w: 9, h: 18 },
+            widget: { w: 3, h: 5 },
+        };
 
-        function reorganizeColumnAfterMinimize(widget) {
-            const widgetX = parseInt(widget.getAttribute('gs-x'));
-            const widgetW = parseInt(widget.getAttribute('gs-w'));
-            const widgetY = parseInt(widget.getAttribute('gs-y'));
-            const isMinimized = widget.classList.contains('widget-minimized');
-            
-            // Calcula o intervalo X do widget modificado
-            const widgetXStart = widgetX;
-            const widgetXEnd = widgetX + widgetW - 1;
-            
-            // Pega todos os widgets que compartilham o mesmo intervalo X
-            const affectedWidgets = Array.from(document.querySelectorAll('#main-dashboard .grid-stack-item'))
-                .filter(wid => {
-                    const x = parseInt(wid.getAttribute('gs-x'));
-                    const w = parseInt(wid.getAttribute('gs-w'));
-                    const xStart = x;
-                    const xEnd = x + w - 1;
-                    
-                    // Verifica sobreposição no eixo X
-                    return (xStart <= widgetXEnd && xEnd >= widgetXStart);
-                })
-                .sort((a, b) => parseInt(a.getAttribute('gs-y')) - parseInt(b.getAttribute('gs-y')));
-            
-            // Reorganiza apenas os widgets afetados
-            let currentY = 0;
-            affectedWidgets.forEach(w => {
-                const currentHeight = parseInt(w.getAttribute('gs-h'));
-                const currentX = parseInt(w.getAttribute('gs-x'));
-                
-                if (w === widget && !isMinimized) {
-                    currentY = widgetY;
-                } else {
-                    dashboard.update(w, { 
-                        y: currentY, 
-                        x: currentX, 
-                        h: w.classList.contains('widget-minimized') ? 2 : parseInt(w.dataset.originalHeight || w.getAttribute('gs-h'))
-                    });
+        // ======================
+        // UTILITY FUNCTIONS
+        // ======================
+        function notify(options) {
+            new FilamentNotification()
+                .title(options.title)
+                .body(options.body || '')
+                .status(options.status || 'success')
+                .duration(options.duration || 3000)
+                .send();
+        }
+        
+        function getLivewireComponent(widgetIndex) {
+            const components = {
+                noticias: `@livewire('noticias')`,
+                avisos: `@livewire('avisos')`,
+                feed: `@livewire('feeds')`,
+                widget: `@livewire('widgets-ex')`
+            };
+            return components[widgetIndex] || '';
+        }
+        
+        function countWidgets(categoryId) {
+            const grid = document.getElementById(`grid-${categoryId}`);
+            if (!grid) return 0;
+            return grid.querySelectorAll('.grid-stack-item').length;
+        }
+        
+        function updateAllCounters() {
+            const categories = ['comunicacao', 'financeiro', 'rh'];
+            categories.forEach(category => {
+                const counter = document.getElementById(`${category}-widget-count`);
+                if (counter) {
+                    counter.textContent = countWidgets(category);
                 }
-                
-                currentY += currentHeight;
             });
-            
-            dashboard.commit();
         }
 
+        // ======================
+        // WIDGET MANAGEMENT
+        // ======================
+        function reorganizeColumnAfterMinimize(widget) {
+            const grid = dashboard;
+            const isMinimized = widget.classList.contains('widget-minimized');
+            const widgetNode = grid.engine.nodes.find(n => n.el === widget);
+            
+            if (!widgetNode) return;
+
+            const originalHeight = parseInt(widget.dataset.originalHeight);
+            const newHeight = isMinimized ? 2 : originalHeight;
+
+            const allWidgets = grid.engine.nodes.map(node => ({
+                el: node.el,
+                x: node.x,
+                y: node.y,
+                w: node.w,
+                h: node.h,
+                locked: node.el?.dataset?.lockedFromSector === '1',
+                node: node
+            }));
+
+            const widgetXStart = widgetNode.x;
+            const widgetXEnd = widgetNode.x + widgetNode.w - 1;
+
+            // Função para verificar se dois widgets ocupam colunas que se sobrepõem
+            function overlaps(aStart, aEnd, bStart, bEnd) {
+                return !(bStart > aEnd || bEnd < aStart);
+            }
+
+            grid.batchUpdate();
+
+            widgetNode.h = newHeight;
+
+            let movedWidgets = [widgetNode]; 
+
+            let changed = true;
+            while (changed) {
+                changed = false;
+
+                allWidgets.forEach(w => {
+                    if (movedWidgets.includes(w.node)) return; // já moveu
+                    if (w.locked) return; // ignora widgets fixados
+                    // Descobre se esse widget está imediatamente abaixo de algum widget já movido
+                    const isBelow = movedWidgets.some(moved => {
+                        const movedBottomY = moved.y + moved.h; 
+                        return (
+                            overlaps(moved.x, moved.x + moved.w - 1, w.x, w.x + w.w - 1) && 
+                            w.y >= movedBottomY
+                        );
+                    });
+
+                    if (isBelow) {
+                        // Move o widget para encostar nos widgets já movidos
+                        let targetY = 0;
+
+                        // Encontrar o maior y+h dos widgets acima que sobrepõem
+                        allWidgets.forEach(other => {
+                            if (other === w) return;
+
+                            if (
+                                overlaps(other.x, other.x + other.w - 1, w.x, w.x + w.w - 1) &&
+                                other.y + other.h <= w.y
+                            ) {
+                                targetY = Math.max(targetY, other.y + other.h);
+                            }
+                        });
+
+                        if (w.y !== targetY) {
+                            grid.update(w.el, { y: targetY });
+                            w.y = targetY;
+                            changed = true;
+                        }
+
+                        movedWidgets.push(w.node);
+                    }
+                });
+            }
+
+            grid.commit();
+        }
+
+        
         function toggleWidgetMinimize(widget) {            
             if (widget.dataset.lockedFromSector === '1') {
                 notify({
@@ -60,20 +170,22 @@
             
             if (!node) return;
             
-            // Guarda a altura original e o conteúdo completo
             if (!widget.dataset.originalHeight) {
                 widget.dataset.originalHeight = node.h;
             }
             if (!widget.dataset.originalContent) {
-                widget.dataset.originalContent = widget.querySelector('.grid-stack-item-content').innerHTML;
+                const snapshotDiv = widget.querySelector('div[wire\\:snapshot]');
+                if (snapshotDiv) {
+                    widget.dataset.originalContent = snapshotDiv.innerHTML;
+                }
             }
             
             widget.classList.toggle('widget-minimized');
             
-            const content = widget.querySelector('.grid-stack-item-content');
-            if (content) {
+            const snapshotDiv = widget.querySelector('div[wire\\:snapshot]');
+            if (snapshotDiv) {
                 if (isMinimized) {
-                    content.innerHTML = widget.dataset.originalContent;
+                    snapshotDiv.innerHTML = widget.dataset.originalContent;
                 } else {
                     const widgetTitle = widget.querySelector('.widget-title').textContent;
                     const bulkActions = widget.querySelector('.bulk-actions');                    
@@ -81,10 +193,10 @@
                     if (icon) {
                         icon.classList.toggle('fa-chevron-down');
                         icon.classList.toggle('fa-chevron-up');
-                    }
+                    }    
 
-                    content.innerHTML = `
-                        <div class="flex items-center justify-between h-full px-3 bg-gray-50 border-l-4 border-blue-500 rounded">
+                    snapshotDiv.innerHTML = `
+                        <div class="flex items-center widget-minimized justify-between h-full px-3 bg-gray-50 border-l-4 border-blue-500 rounded">
                             <div class="flex items-center min-w-0">
                                 <i class="fas fa-window-minimize mr-2 text-gray-400 text-sm"></i>
                                 <span class="font-medium text-gray-700 truncate">${widgetTitle}</span>
@@ -97,66 +209,19 @@
                 }
             }
             
-            // Atualiza a altura no grid
             const newHeight = isMinimized ? parseInt(widget.dataset.originalHeight) : 2;
+            
             dashboard.update(widget, { h: newHeight });
             
             setTimeout(() => {
-                reorganizeColumnAfterMinimize(widget); 
+                reorganizeColumnAfterMinimize(widget);
                 reorganizeSidebarWidgets();
             }, 100);
         }
 
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.minimize-widget')) {
-                const widget = e.target.closest('.grid-stack-item');
-                if (widget) {
-                    toggleWidgetMinimize(widget);
-                } else {
-                    console.warn('Não foi possível encontrar o widget associado ao botão de minimizar');
-                }
-            }
-        });
-        //variaveis globais + definição de grids
-        const setDefaultBtn = document.getElementById('set-default');
-        const saveBtn = document.getElementById('save-layout');
-        const sidebar = document.getElementById('sidebar');
-        const leftSidebar = document.getElementById('left-sidebar');
-        const toggleButton = document.getElementById('toggle-sidebar');
-        const toggleLeftSidebar = document.getElementById('toggle-left-sidebar');            
-        const personalizeBtn = document.getElementById('personalize');
-        const closeSidebar = document.getElementById('close-sidebar');
-        const resetLayoutBtn = document.getElementById('reset-layout');
-        const categoryGrids = document.querySelectorAll('[data-category-grid]');
-        const categoryGridInstances = {}
-        let dashboard = GridStack.init({
-            cellHeight: 100,
-            minRow: 3,
-            acceptWidgets: true,
-            float: true,
-            disableResize: true,
-            disableDrag: true
-        }, '#main-dashboard');
-        let isEditing = false;
-        const widgetSizes = {
-            noticias: { w: 3, h: 5 },
-            avisos: { w: 3, h: 5 },
-            feed: { w: 9, h: 18, },
-            widget: { w: 3, h: 5, },
-        };
-        let dashboardItems = document.querySelectorAll('#main-dashboard .grid-stack-item');
-
-        //funções 
-        
-        function notify(options) {
-            new FilamentNotification()
-                .title(options.title)
-                .body(options.body || '')
-                .status(options.status || 'success')
-                .duration(options.duration || 3000)
-                .send();
-        }
-        
+        // ======================
+        // SIDEBAR MANAGEMENT
+        // ======================
         function reorganizeSidebarWidgets() {
             Object.keys(categoryGridInstances).forEach(category => {
                 const categoryGrid = categoryGridInstances[category];
@@ -176,67 +241,6 @@
             });
         }
 
-        function removeDuplicateWidgetsFromCategories() {
-            const dashboardWidgets = dashboard.engine.nodes.map(node => node.el.dataset.widgetIndex);
-            
-            Object.keys(categoryGridInstances).forEach(category => {
-                const categoryGrid = categoryGridInstances[category];
-                const categoryWidgets = categoryGrid.engine.nodes;
-                
-                for (let i = categoryWidgets.length - 1; i >= 0; i--) {
-                    const widget = categoryWidgets[i];
-                    const widgetIndex = widget.el.dataset.widgetIndex;
-                    
-                    if (dashboardWidgets.includes(widgetIndex)) {
-                        categoryGrid.removeWidget(widget.el, true); 
-                        // console.log(`Removido widget ${widgetIndex} da categoria ${category}`);
-                    }
-                }
-            });
-            
-            updateAllCounters();
-            reorganizeSidebarWidgets();
-        }
-
-        function countWidgets(categoryId) {
-            const grid = document.getElementById(`grid-${categoryId}`);
-            if (!grid) return 0;
-            return grid.querySelectorAll('.grid-stack-item').length;
-        }
-        
-        function updateAllCounters() {
-            const categories = ['comunicacao', 'financeiro', 'rh'];
-            categories.forEach(category => {
-                const counter = document.getElementById(`${category}-widget-count`);
-                if (counter) {
-                    counter.textContent = countWidgets(category);
-                }
-            });
-        }
-        
-        const observer = new MutationObserver(function(mutations) {
-            updateAllCounters();
-            reorganizeSidebarWidgets();
-        });
-
-        document.querySelectorAll('[data-category-grid]').forEach(grid => {
-            observer.observe(grid, {
-                childList: true,
-                subtree: true
-            });
-        });
-
-        updateAllCounters();
-
-        document.querySelectorAll('[data-category]').forEach(button => {
-            button.addEventListener('click', function() {
-                setTimeout(() => {
-                    updateAllCounters();
-                    reorganizeSidebarWidgets();
-                }, 300); 
-            });
-        });
-
         function initializeCategoryGrids() {
             const categoryGrids = document.querySelectorAll('[data-category-grid]');
 
@@ -253,29 +257,36 @@
                     appendTo: 'body',
                     helper: 'clone'
                 });
-
-                //console.log(`Grid inicializado para categoria ${categoryName}`);
             });
 
             reorganizeSidebarWidgets();
             return categoryGridInstances;
         }
 
-        initializeCategoryGrids();  
-
-        document.querySelectorAll(".bulk-actions button").forEach(button => {
-            button.addEventListener("click", function (event) {
-                if (button.classList.contains("icon-disabled-sector")) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    notify({
-                        title: 'Ação não permitida',
-                        status: 'danger'
-                    });
+        function removeDuplicateWidgetsFromCategories() {
+            const dashboardWidgets = dashboard.engine.nodes.map(node => node.el.dataset.widgetIndex);
+            
+            Object.keys(categoryGridInstances).forEach(category => {
+                const categoryGrid = categoryGridInstances[category];
+                const categoryWidgets = categoryGrid.engine.nodes;
+                
+                for (let i = categoryWidgets.length - 1; i >= 0; i--) {
+                    const widget = categoryWidgets[i];
+                    const widgetIndex = widget.el.dataset.widgetIndex;
+                    
+                    if (dashboardWidgets.includes(widgetIndex)) {
+                        categoryGrid.removeWidget(widget.el, true); 
+                    }
                 }
             });
-        });
-        
+            
+            updateAllCounters();
+            reorganizeSidebarWidgets();
+        }
+
+        // ======================
+        // LAYOUT MANAGEMENT
+        // ======================
         function resetLayout() {
             notify({
                 title: 'Layout resetado com sucesso!',
@@ -287,16 +298,6 @@
             }, 2000)
         }
         
-        function getLivewireComponent(widgetIndex) {
-            const components = {
-                noticias: `@livewire('noticias')`,
-                avisos: `@livewire('avisos')`,
-                feed: `@livewire('feeds')`,
-                widget: `@livewire('widgets-ex')`
-            };
-            return components[widgetIndex] || '';
-        }
-
         function toggleEdit() {
             if (!isEditing) {
                 dashboard.enable(); 
@@ -313,81 +314,21 @@
             }
             isEditing = !isEditing;
         }
-        
-        dashboardItems.forEach((item) => {
-            let widgetIndex = item.dataset.widgetIndex;
-            
-            if (widgetIndex) {
-                let sidebarItem = document.querySelector(`#right-sidebar .grid-stack-item[data-widget-index="${widgetIndex}"]`);
-                if (sidebarItem) {
-                    sidebarItem.remove();
+
+        // ======================
+        // EVENT LISTENERS
+        // ======================
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.minimize-widget')) {
+                const widget = e.target.closest('.grid-stack-item');
+                if (widget) {
+                    toggleWidgetMinimize(widget);
+                } else {
+                    console.warn('Não foi possível encontrar o widget associado ao botão de minimizar');
                 }
             }
         });
 
-        removeDuplicateWidgetsFromCategories();
-
-        if (setDefaultBtn) {
-            setDefaultBtn.addEventListener('click', function () {
-                let layout = dashboard.save();
-                layout.forEach(item => {
-                    let node = dashboard.engine.nodes.find(n => 
-                        n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
-                    );
-                    
-                    if (node) {
-                        if (node.locked) {
-                            item.locked_from_sector = true; 
-                            node.locked_from_sector = true;
-                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
-                        } else {
-                            item.locked_from_sector = false; 
-                            node.locked_from_sector = false;
-                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
-                        }
-
-                        if (!item.widgetIndex && node.el) {
-                            item.widgetIndex = node.el.dataset.widgetIndex || null;
-                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
-                        }
-
-                        if(!item.widgetCategory && node.el){
-                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;                                
-                        }                            
-                    }
-                });
-
-                setTimeout(() => {
-                    Livewire.dispatch('setDefaultLayoutSector', [layout]);
-                    setTimeout(() => location.reload(), 500);
-                }, 2000)
-            });
-        }
-
-        resetLayoutBtn.addEventListener('click', resetLayout);
-
-        closeSidebar.addEventListener('click', function(){
-            sidebar.classList.toggle('translate-x-full');
-        })
-    
-
-        toggleLeftSidebar.onclick = function() {
-            leftSidebar.classList.toggle('active');
-        };
-
-        toggleButton.addEventListener('click', function () {
-            sidebar.classList.toggle('translate-x-full');
-
-            if (!sidebar.classList.contains('translate-x-full')) {
-                toggleEdit();
-            }
-        });
-
-        personalizeBtn.addEventListener('click', function () {
-            toggleEdit();
-        });
-
-        //funcionalidade de fixação, remoção e redimensionamento de widgets
         document.addEventListener('click', function (event) {
             let widget = event.target.closest('.grid-stack-item');
             if(!widget){
@@ -533,7 +474,9 @@
             }
         });
 
-        //funções de drag and drop do dashboard
+        // ======================
+        // DASHBOARD EVENTS
+        // ======================
         dashboard.on('added', function (event, items) {
             dashboard.batchUpdate();
 
@@ -553,8 +496,8 @@
         });
 
         dashboard.on('change', function(event, items) {
-            let allWidgets = dashboard.save();
             let allWidgetsDOM = dashboard.getGridItems();
+            let allWidgets = dashboard.save();
             
             allWidgetsDOM.forEach(item => {
                 let widgetCategory = item.dataset.category
@@ -568,21 +511,17 @@
             });
             
             reorganizeSidebarWidgets();
-            
+
             let layoutToSave = [];
-            
+      
             allWidgets.forEach(item => {
                 let node = dashboard.engine.nodes.find(n => 
                     n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
                 );
                 
-                if (node && !node.locked) {
-                    // Verifica se o widget está minimizado
-                    const isMinimized = node.el.classList.contains('widget-minimized');
-                    
-                    // Se estiver minimizado, usa a altura original
-                    const heightToSave = isMinimized ? 
-                        (parseInt(node.el.dataset.originalHeight) || node.h) : 
+                if (node) {
+                    const heightToSave = node.el.dataset.originalHeight ? 
+                        parseInt(node.el.dataset.originalHeight) : 
                         node.h;
                     
                     layoutToSave.push({
@@ -592,13 +531,12 @@
                         h: heightToSave, 
                         widgetCategory: node.widgetCategory,
                         widgetIndex: node.el?.dataset?.widgetIndex || node.widgetIndex || null,
-                        locked_from_sector: false,
-                        locked: false,
-                        isMinimized: isMinimized 
+                        locked_from_sector: node.locked_from_sector || false,
+                        locked: node.locked || false,
                     });
                 }
-            });
-                        
+            });     
+
             if(isManager){
                 setDefaultBtn.onclick = function () {
                     notify({
@@ -607,7 +545,7 @@
                     });
                     setTimeout(() => {
                         Livewire.dispatch('saveLayout', [layoutToSave]);
-                        setTimeout(() => location.reload(), 500);
+                       // setTimeout(() => location.reload(), 500);
                     }, 2000)
                 };
             }else{
@@ -646,6 +584,138 @@
             }
             
             reorganizeSidebarWidgets();
+        });
+
+        // ======================
+        // INITIALIZATION
+        // ======================
+        initializeCategoryGrids();  
+        
+        dashboardItems.forEach((item) => {
+            let widgetIndex = item.dataset.widgetIndex;
+            
+            if (widgetIndex) {
+                let sidebarItem = document.querySelector(`#right-sidebar .grid-stack-item[data-widget-index="${widgetIndex}"]`);
+                if (sidebarItem) {
+                    sidebarItem.remove();
+                }
+            }
+        });
+
+        removeDuplicateWidgetsFromCategories();
+
+        const observer = new MutationObserver(function(mutations) {
+            updateAllCounters();
+            reorganizeSidebarWidgets();
+        });
+
+        document.querySelectorAll('[data-category-grid]').forEach(grid => {
+            observer.observe(grid, {
+                childList: true,
+                subtree: true
+            });
+        });
+
+        updateAllCounters();
+
+        document.querySelectorAll('[data-category]').forEach(button => {
+            button.addEventListener('click', function() {
+                setTimeout(() => {
+                    updateAllCounters();
+                    reorganizeSidebarWidgets();
+                }, 300); 
+            });
+        }); 
+
+        document.querySelectorAll(".bulk-actions button").forEach(button => {
+            button.addEventListener("click", function (event) {
+                if (button.classList.contains("icon-disabled-sector")) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    notify({
+                        title: 'Ação não permitida',
+                        status: 'danger'
+                    });
+                }
+            });
+        });
+
+        if (setDefaultBtn) {
+            setDefaultBtn.addEventListener('click', function() {
+                const minimizedWidgets = [];
+                document.querySelectorAll('.grid-stack-item').forEach(widget => {
+                    if (widget.classList.contains('widget-minimized')) {
+                        const node = dashboard.engine.nodes.find(n => n.el === widget);
+                        if (node && widget.dataset.originalHeight) {
+                            minimizedWidgets.push({
+                                element: widget,
+                                node: node
+                            });
+                            widget.classList.remove('widget-minimized');
+                            node.h = parseInt(widget.dataset.originalHeight);
+                            widget.setAttribute('gs-h', widget.dataset.originalHeight);
+                        }
+                    }
+                });
+
+                let layout = dashboard.save();
+
+                layout.forEach(item => {
+                    const node = dashboard.engine.nodes.find(n => 
+                        n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
+                    );
+                    
+                    if (node) {
+                        if (node.locked) {
+                            item.locked_from_sector = true; 
+                            node.locked_from_sector = true;
+                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
+                        } else {
+                            item.locked_from_sector = false; 
+                            node.locked_from_sector = false;
+                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
+                        }
+
+                        if (!item.widgetIndex && node.el) {
+                            item.widgetIndex = node.el.dataset.widgetIndex || null;
+                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
+                        }
+
+                        if(!item.widgetCategory && node.el) {
+                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
+                        }
+                    }
+                });
+
+                dashboard.batchUpdate();
+                dashboard.commit();
+
+                console.log('Layout final:', layout);
+                Livewire.dispatch('setDefaultLayoutSector', [layout]);
+                setTimeout(() => location.reload(), 500);
+            });
+        }
+
+        resetLayoutBtn.addEventListener('click', resetLayout);
+
+        closeSidebar.addEventListener('click', function(){
+            sidebar.classList.toggle('translate-x-full');
+        })
+    
+        toggleLeftSidebar.onclick = function() {
+            leftSidebar.classList.toggle('active');
+        };
+
+        toggleButton.addEventListener('click', function () {
+            sidebar.classList.toggle('translate-x-full');
+
+            if (!sidebar.classList.contains('translate-x-full')) {
+                toggleEdit();
+            }
+        });
+
+        personalizeBtn.addEventListener('click', function () {
+            toggleEdit();
         });
     });
 </script>

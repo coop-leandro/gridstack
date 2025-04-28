@@ -3,6 +3,10 @@
 @tailwind utilities;
 @tailwind variants;
 
+.widget-minimized{
+    min-height: 150px;
+}
+
 header{
     background-color: #fff;
 }
