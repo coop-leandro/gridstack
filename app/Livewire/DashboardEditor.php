@@ -7,7 +7,6 @@ use App\Models\GridStackLayout;
 use App\Models\Sector;
 use App\Models\SectorLayouts;
 use App\Models\User;
-use App\Models\WidgetLog;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -28,17 +27,18 @@ class DashboardEditor extends Component
         $user = User::find($userId);
         $this->isManager = Sector::where('manager_id', $userId)->exists();
 
-        // Layout do setor (carregado para todos)
+        if(!$user){
+            return redirect('/');
+        }
+
         $sectorLayout = SectorLayouts::firstOrCreate(
             ['sector_id' => $user->sector_id],
             ['layout' => "[]"]
         );
 
         if ($this->isManager) {
-            // GERENTE: usa APENAS o layout completo do setor
             $this->layout = json_decode($sectorLayout->layout);
         } else {
-            // USUÁRIO NORMAL: faz o merge normal
             $userLayout = GridStackLayout::firstOrCreate(
                 ['guest_id' => $userId],
                 ['layout' => "[]"]
@@ -63,10 +63,8 @@ class DashboardEditor extends Component
         $merged = [];
         $widgetsProcessados = [];
 
-        // 1. Processa widgets BLOQUEADOS do setor
         foreach ($sectorLayout as $sectorItem) {
             if (isset($sectorItem->widgetIndex) && ($sectorItem->locked_from_sector ?? false)) {
-                // Garante propriedades de bloqueio
                 $sectorItem->locked = true;
                 $sectorItem->noMove = true;
                 $sectorItem->noResize = true;
@@ -76,16 +74,11 @@ class DashboardEditor extends Component
             }
         }
 
-        // 2. Processa widgets do usuário
         foreach ($userLayout as $userItem) {
             if (!isset($userItem->widgetIndex)) continue;
-
-            // Se já existe como bloqueado, mantém o bloqueado
             if (($widgetsProcessados[$userItem->widgetIndex] ?? null) === 'bloqueado') {
                 continue;
             }
-            
-            // Remove versão anterior se existir (para evitar duplicação)
             $merged = array_filter($merged, fn($item) => 
                 !isset($item->widgetIndex) || $item->widgetIndex !== $userItem->widgetIndex
             );
@@ -104,6 +97,7 @@ class DashboardEditor extends Component
             ['guest_id' => $userId],
             ['layout' => json_encode($layout)]
         );
+        $this->dispatch('layoutSaved');
     }
 
 
@@ -129,6 +123,7 @@ class DashboardEditor extends Component
         );
     
         $this->layout = json_decode($layoutJson);
+        $this->dispatch('layoutSaved');
     }
 
     public function setDefaultLayoutSector($layout){
@@ -140,6 +135,7 @@ class DashboardEditor extends Component
             $sectorId = $user->sector_id; 
             if (!$sectorId) {
                 throw new \Exception("Usuário não está associado a um setor.");
+                return redirect('/dashboard');
             }
             $layoutJson = json_encode($layout);
             SectorLayouts::updateOrCreate(
@@ -147,6 +143,7 @@ class DashboardEditor extends Component
                 ['layout' => $layoutJson]
             );
         } 
+        $this->dispatch('layoutSaved');
     }
 
     public function render()
