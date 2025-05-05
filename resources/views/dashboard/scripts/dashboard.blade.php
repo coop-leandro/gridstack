@@ -196,15 +196,20 @@
                     }    
 
                     snapshotDiv.innerHTML = `
-                        <div class="flex items-center widget-minimized justify-between h-full px-3 bg-gray-50 border-l-4 border-blue-500 rounded">
+                        <div class="flex items-center widget-minimized justify-between h-full pl-4 pr-3 bg-gradient-to-r from-gray-50 via-white to-gray-100 border-l-4 border-blue-600 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 ease-in-out group">
                             <div class="flex items-center min-w-0">
-                                <i class="fas fa-window-minimize mr-2 text-gray-400 text-sm"></i>
-                                <span class="font-medium text-gray-700 truncate">${widgetTitle}</span>
+                                <div class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 mr-3 group-hover:bg-blue-200 transition-colors duration-300 shadow-sm">
+                                    <i class="fas fa-window-minimize text-blue-600 text-sm"></i>
+                                </div>
+                                <span class="font-semibold text-gray-800 group-hover:text-blue-700 truncate transition-all duration-300">
+                                    ${widgetTitle}
+                                </span>
                             </div>
-                            <div class="flex space-x-1 ml-2">
+                            <div class="flex space-x-2 ml-2">
                                 ${bulkActions.outerHTML}
                             </div>
                         </div>
+
                     `;
                 }
             }
@@ -294,7 +299,6 @@
             });
             setTimeout(() => {
                 Livewire.dispatch('resetLayout');
-                setTimeout(() => location.reload(), 500);
             }, 2000)
         }
         
@@ -384,7 +388,6 @@
 
                             setTimeout(() => {
                                 Livewire.dispatch('saveLayout', [finalLayout]);
-                                setTimeout(() => location.reload(), 500);
                             }, 2000)
                         };
                     }
@@ -465,7 +468,6 @@
                         })
                         setTimeout(() => {
                             Livewire.dispatch('saveLayout', [finalLayout]);
-                            setTimeout(() => location.reload(), 500);
                         }, 2000)
                     };
                 }
@@ -545,7 +547,6 @@
                     });
                     setTimeout(() => {
                         Livewire.dispatch('saveLayout', [layoutToSave]);
-                       // setTimeout(() => location.reload(), 500);
                     }, 2000)
                 };
             }else{
@@ -556,7 +557,6 @@
                     });
                     setTimeout(() => {
                         Livewire.dispatch('saveLayout', [layoutToSave]);
-                        setTimeout(() => location.reload(), 500);
                     }, 2000)
                 };
             }
@@ -692,7 +692,6 @@
 
                 console.log('Layout final:', layout);
                 Livewire.dispatch('setDefaultLayoutSector', [layout]);
-                setTimeout(() => location.reload(), 500);
             });
         }
 
@@ -716,6 +715,10 @@
 
         personalizeBtn.addEventListener('click', function () {
             toggleEdit();
+        });
+
+        Livewire.on('layoutSaved', function () {
+            location.reload();
         });
     });
 </script>
