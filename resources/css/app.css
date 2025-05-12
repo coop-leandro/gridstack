@@ -3,6 +3,10 @@
 @tailwind utilities;
 @tailwind variants;
 
+.hidden{
+    display: none !important;
+}
+
 .widget-minimized{
     min-height: 150px;
 }
@@ -224,7 +228,7 @@ header{
 }
 
 #right-sidebar .grid-stack-item-content {
-    background-color: #f7f7f7;
+    background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
     text-align: center;
@@ -232,9 +236,6 @@ header{
     transition: background-color 0.3s ease-in-out;
 }
 
-#right-sidebar .grid-stack-item-content:hover {
-    background-color: #e0e0e0;
-}
 
 .list-group-item {
     display: flex;

@@ -4,8 +4,6 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\GridStackLayout;
-use App\Models\Sector;
-use App\Models\SectorLayouts;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Exception;
@@ -14,11 +12,10 @@ use Illuminate\Support\Facades\Log;
 class DashboardEditor extends Component
 {
     public $layout;
-    public $noticias;
     public $isManager = false;
+    public $userId;
     protected $listeners = [
         'saveLayout' => 'saveLayout',
-        'setDefaultLayoutSector' => 'setDefaultLayoutSector',
         'resetLayout' => 'resetLayout',
     ];
 
@@ -26,6 +23,7 @@ class DashboardEditor extends Component
     {
         try {
             $userId = Auth::id();
+            $this->userId = $userId;
             if (!$userId) {
                 return redirect('/');
                 throw new Exception('Usuário não autenticado.');
@@ -36,36 +34,53 @@ class DashboardEditor extends Component
                 return redirect('/');
             }
 
-            $this->isManager = Sector::where('manager_id', $userId)->exists();
+            // Define se o usuário é um superior (tem subordinados)
+            $this->isManager = $user->subordinates->isNotEmpty();
 
-            $sectorLayout = SectorLayouts::firstOrCreate(
-                ['sector_id' => $user->sector_id],
-                ['layout' => "[]"]
-            );
+            // Carrega e mescla o layout com o layout de todos os superiores
+            $this->loadLayout($user);
 
-            if ($this->isManager) {
-                $this->layout = $this->safeJsonDecode($sectorLayout->layout);
-            } else {
-                $userLayout = GridStackLayout::firstOrCreate(
-                    ['guest_id' => $userId],
-                    ['layout' => "[]"]
-                );
-                
-                $this->layout = $this->mergeLayouts(
-                    $this->safeJsonDecode($userLayout->layout),
-                    $this->safeJsonDecode($sectorLayout->layout)
-                );
-            }
         } catch (Exception $e) {
             Log::error('Erro no método mount: ' . $e->getMessage());
             $this->layout = [];
-            session()->flash('error', 'Ocorreu um erro ao carregar o dashboard.');
+        }
+        return view('dashboard.index', $this->layout);
+    }
+
+    protected function loadLayout($user)
+    {
+        // Recupera os layouts de todos os superiores
+        $supervisorLayouts = $this->getAllSupervisorLayouts($user);
+
+        // Recupera o layout do próprio usuário
+        $userLayout = $this->getLayoutForUser($user);
+
+        // Mescla o layout do usuário com os layouts dos superiores
+        $this->layout = $this->mergeLayouts($userLayout, $supervisorLayouts);
+    }
+
+    protected function getAllSupervisorLayouts($user)
+    {
+        $supervisorLayouts = [];
+
+        // Percorre todos os supervisores até o topo da hierarquia
+        while ($user->supervisor) {
+            $supervisor = $user->supervisor;
+            $supervisorLayouts[] = $this->getLayoutForUser($supervisor);
+            $user = $supervisor;
         }
 
-        return view('dashboard.index', [
-            'layout' => $this->layout,
-            'isManager' => $this->isManager
-        ]);
+        return $supervisorLayouts;
+    }
+
+    protected function getLayoutForUser($user)
+    {
+        $layoutModel = GridStackLayout::firstOrCreate(
+            ['guest_id' => $user->id],
+            ['layout' => "[]"]
+        );
+
+        return $this->safeJsonDecode($layoutModel->layout);
     }
 
     protected function safeJsonDecode($json)
@@ -79,67 +94,60 @@ class DashboardEditor extends Component
         }
     }
 
-    protected function mergeLayouts($userLayout, $sectorLayout)
+    protected function mergeLayouts($userLayout, $supervisorLayouts)
     {
         try {
-            $userLayout = is_array($userLayout) ? $userLayout : [];
-            $sectorLayout = is_array($sectorLayout) ? $sectorLayout : [];
-
             $merged = [];
-            $widgetsProcessados = [];
 
-            foreach ($sectorLayout as $sectorItem) {
-                if (!is_object($sectorItem)) continue;
-                
-                if (isset($sectorItem->widgetIndex) && ($sectorItem->locked_from_sector ?? false)) {
-                    $sectorItem->locked = true;
-                    $sectorItem->noMove = true;
-                    $sectorItem->noResize = true;
-                    
-                    $merged[] = $sectorItem;
-                    $widgetsProcessados[$sectorItem->widgetIndex] = 'bloqueado';
+            // Adiciona os widgets fixados de todos os supervisores
+            foreach ($supervisorLayouts as $supervisorLayout) {
+                foreach ($supervisorLayout as $widget) {
+                    if (isset($widget->locked) && $widget->locked) {
+                        $merged[] = $widget; 
+                    }
                 }
             }
 
-            foreach ($userLayout as $userItem) {
-                if (!is_object($userItem)) continue;
-                if (!isset($userItem->widgetIndex)) continue;
-                
-                if (($widgetsProcessados[$userItem->widgetIndex] ?? null) === 'bloqueado') {
-                    continue;
+            // Adiciona os widgets do usuário, não duplicando os fixados dos supervisores
+            foreach ($userLayout as $widget) {
+                if (!in_array($widget, $merged)) {
+                    $merged[] = $widget; 
                 }
-                
-                $merged = array_filter($merged, fn($item) => 
-                    !is_object($item) || !isset($item->widgetIndex) || $item->widgetIndex !== $userItem->widgetIndex
-                );
-                
-                $merged[] = $userItem;
             }
 
             return $merged;
         } catch (Exception $e) {
             Log::error('Erro ao mesclar layouts: ' . $e->getMessage());
-            return array_merge($userLayout, $sectorLayout);
+            return array_merge($userLayout, $supervisorLayouts);
         }
     }
 
     public function saveLayout($layout)
     {
+        $userId = Auth::id();
+        //dd($layout);
+        foreach($layout as $item){
+
+            $userWidgets = collect($layout)
+                ->filter(fn($item) => empty(data_get($item, 'locked_by')) || data_get($item, 'locked_by') == $userId)
+                ->values()
+                ->all();
+        }
+        //dd($userWidgets);
         try {
-            $userId = Auth::id();
-            
+
             if (!$userId) {
                 return redirect('/');
                 throw new Exception('Usuário não autenticado.');
             }
 
-            if (!is_array($layout)) {
+            if (!is_array($userWidgets)) {
                 throw new Exception('Dados de layout inválidos.');
             }
 
             GridStackLayout::updateOrCreate(
                 ['guest_id' => $userId],
-                ['layout' => json_encode($layout)]
+                ['layout' => json_encode($userWidgets)]
             );
             
             $this->dispatch('layoutSaved');
@@ -161,63 +169,23 @@ class DashboardEditor extends Component
                 throw new Exception('Usuário não encontrado.');
             }
 
-            $sectorId = $user->sector_id;
-            $layoutJson = "[]";
+            // Recupera os layouts de todos os supervisores ou o layout padrão
+            $supervisorLayouts = $this->getAllSupervisorLayouts($user);
 
-            if ($sectorId) {
-                $sectorLayout = SectorLayouts::where('sector_id', $sectorId)->first();
-                if ($sectorLayout) {
-                    $layoutJson = $sectorLayout->layout;
-                }
-            }
+            $flattenedLayout = array_merge(...$supervisorLayouts);
+
+            // Reseta o layout do usuário
+            $layoutJson = json_encode($flattenedLayout);
 
             GridStackLayout::updateOrCreate(
                 ['guest_id' => $userId],
                 ['layout' => $layoutJson]
             );
-        
+
             $this->layout = $this->safeJsonDecode($layoutJson);
             $this->dispatch('layoutSaved');
         } catch (Exception $e) {
             Log::error('Erro ao resetar layout: ' . $e->getMessage());
-        }
-    }
-
-    public function setDefaultLayoutSector($layout)
-    {
-        try {
-            $userId = Auth::id();
-            if (!$userId) {
-                return redirect('/');
-                throw new Exception('Usuário não autenticado.');
-            }
-
-            if (!is_array($layout)) {
-                throw new Exception('Dados de layout inválidos.');
-            }
-
-            $user = User::find($userId);
-            if (!$user) {
-                return redirect('/');
-                throw new Exception('Usuário não encontrado.');
-            }
-
-            if ($this->isManager) {
-                $sectorId = $user->sector_id; 
-                if (!$sectorId) {
-                    return redirect('/');
-                    throw new Exception("Usuário não está associado a um setor.");
-                }
-
-                SectorLayouts::updateOrCreate(
-                    ['sector_id' => $sectorId],
-                    ['layout' => json_encode($layout)]
-                );
-            }
-            
-            $this->dispatch('layoutSaved');
-        } catch (Exception $e) {
-            Log::error('Erro ao definir layout padrão do setor: ' . $e->getMessage());
         }
     }
 

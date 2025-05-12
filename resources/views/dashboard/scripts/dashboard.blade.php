@@ -1,9 +1,9 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        window.currentUserId = {{ auth()->user()->id }}; 
         // ======================
         // GLOBAL VARIABLES
         // ======================
-        const setDefaultBtn = document.getElementById('set-default');
         const saveBtn = document.getElementById('save-layout');
         const sidebar = document.getElementById('sidebar');
         const leftSidebar = document.getElementById('left-sidebar');
@@ -12,6 +12,9 @@
         const personalizeBtn = document.getElementById('personalize');
         const closeSidebar = document.getElementById('close-sidebar');
         const resetLayoutBtn = document.getElementById('reset-layout');
+        const headerPrincipal = document.getElementById('header-principal');
+        const headerEdicao = document.getElementById('header-edicao');
+        const cancelarEdicaoBtn = document.getElementById('edit-cancelar');
         const categoryGrids = document.querySelectorAll('[data-category-grid]');
         const categoryGridInstances = {};
         
@@ -114,8 +117,8 @@
                 changed = false;
 
                 allWidgets.forEach(w => {
-                    if (movedWidgets.includes(w.node)) return; // já moveu
-                    if (w.locked) return; // ignora widgets fixados
+                    if (movedWidgets.includes(w.node)) return; 
+                    if (w.locked) return; 
                     // Descobre se esse widget está imediatamente abaixo de algum widget já movido
                     const isBelow = movedWidgets.some(moved => {
                         const movedBottomY = moved.y + moved.h; 
@@ -157,9 +160,9 @@
 
         
         function toggleWidgetMinimize(widget) {            
-            if (widget.dataset.lockedFromSector === '1') {
+            if(widget.dataset.lockedBy != '' && widget.dataset.lockedBy != window.currentUserId){
                 notify({
-                    title: 'Widget fixado não pode ser minimizado',
+                    title: 'Widget não pode ser minimizado pois está fixado pelo setor.',
                     status: 'danger'
                 });
                 return;
@@ -302,22 +305,33 @@
             }, 2000)
         }
         
+        function toggleEditMode(){
+            headerPrincipal.classList.toggle('hidden');
+            headerEdicao.classList.toggle('hidden');
+            dashboardItems.forEach(item => {
+                let content = item.querySelector('.grid-stack-item-content');
+                if (content) {
+                    content.classList.toggle('border-2');
+                    content.classList.toggle('border-blue-500');
+                    content.classList.toggle('border-dashed');
+                }
+            });
+        }
+
         function toggleEdit() {
             if (!isEditing) {
                 dashboard.enable(); 
                 dashboard.enableMove(true); 
                 dashboard.enableResize(true); 
                 dashboard.float(true); 
-                personalizeBtn.textContent = 'Finalizar Edição'; 
             } else {
                 dashboard.disable(); 
                 dashboard.enableMove(false); 
                 dashboard.enableResize(false); 
                 dashboard.float(false); 
-                personalizeBtn.textContent = 'Editar';
             }
             isEditing = !isEditing;
-        }
+        }        
 
         // ======================
         // EVENT LISTENERS
@@ -333,54 +347,54 @@
             }
         });
 
+        let teste = dashboard.getGridItems()
         document.addEventListener('click', function (event) {
             let widget = event.target.closest('.grid-stack-item');
-            if(!widget){
-                return;
-            }
+            if (!widget) return;
+
             let widgetIndex = widget.dataset.widgetIndex;
             let item = dashboard.engine.nodes.find(n => n.el === widget);
-            let lockedFromSector = widget.dataset.lockedFromSector
+            let lockedFromSector = widget.dataset.lockedFromSector;
             let widgetCategory = widget.dataset.category;
-
+            let lockedBy = widget.dataset.lockedBy; 
+            
             if (event.target.classList.contains('fix-widget')) {
-                if (widget) {
+                if (lockedBy == window.currentUserId || lockedBy == '' || lockedBy == null) {
                     if (item) {
                         let isLocked = item.noMove && item.noResize && item.locked;
 
                         dashboard.update(widget, {
-                            noMove: !isLocked,     
+                            noMove: !isLocked,
                             noResize: !isLocked,
                             locked: !isLocked,
                             widgetIndex: widgetIndex,
                             locked_from_sector: lockedFromSector,
-                            widgetCategory: widgetCategory
+                            widgetCategory: widgetCategory,
+                            locked_by: !isLocked ? window.currentUserId : null 
                         });
 
                         event.target.classList.toggle('icon-disabled', !isLocked);
-                    
+
                         notify({
                             title: `Widget ${widgetIndex} foi ${!isLocked ? 'fixado' : 'desfixado'}`,
                             status: 'success'
                         });
-                        let layout = dashboard.save(); 
-                        const finalLayout = layout.map(item => {
-                            let node = dashboard.engine.nodes.find(n => 
+
+                        let finalLayout = dashboard.save();
+                        finalLayout.forEach(item => {
+                            const node = dashboard.engine.nodes.find(n => 
                                 n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
                             );
-                            let fixed = node.locked
+                            
                             if (node) {
-                                item.widgetIndex = node.el.dataset.widgetIndex; 
-                                item.locked = fixed;  
-                                item.content = null  
-                                item.locked_from_sector = node.el.dataset.lockedFromSector || false;   
-                                item.widgetCategory = node.el.dataset.category;                
+                                item.widgetIndex = node.el.dataset.widgetIndex;  
+                                item.widgetCategory = node.el.dataset.category;  
+                                item.content = null;
+                                item.locked_by = node.el.dataset.lockedBy ? node.el.dataset.lockedBy : window.currentUserId;                   
                             }
-
-                            return item;
                         });
-                        
-                        setDefaultBtn.onclick = function () {
+
+                        saveBtn.onclick = function () {
                             notify({
                                 title: 'Layout salvo com sucesso!',
                                 status: 'success'
@@ -388,20 +402,26 @@
 
                             setTimeout(() => {
                                 Livewire.dispatch('saveLayout', [finalLayout]);
-                            }, 2000)
+                            }, 2000);
                         };
                     }
+                }else{
+                    notify({
+                        title: `Widget ${widgetIndex} não pode ser fixado pois está fixado pelo setor.`,
+                        status: 'danger'
+                    });
                 }
             }
             if(event.target.classList.contains('resize-widget')){
-                if (item && !lockedFromSector) {
+
+                if(lockedBy == window.currentUserId || lockedBy == '' || lockedBy == null){ 
                     let isResizable = !item.noResize;
                     dashboard.update(widget, { noResize: isResizable });
                     notify({
                         title: `Redimensionamento de ${widgetIndex} foi ${isResizable ? 'desativado' : 'ativado'}`,
                         status: 'success'
                     });
-                } else {
+                }else{
                     notify({
                         title: `Widget ${widgetIndex} não pode ser redimensionado pois está fixado pelo setor.`,
                         status: 'danger'
@@ -409,70 +429,67 @@
                 }
             }
             if (event.target.classList.contains('remove-widget')) {
-                let widget = event.target.closest('.grid-stack-item');
-                let widgetCategory = widget.dataset.category;
-                let widgetIndex = widget.dataset.widgetIndex;
-                
-                let lockedFromSector = widget.dataset.lockedFromSector;
-                if (lockedFromSector) {
+                if(lockedBy == window.currentUserId || lockedBy == '' || lockedBy == null) {
+                    let widget = event.target.closest('.grid-stack-item');
+                    let widgetCategory = widget.dataset.category;
+                    let widgetIndex = widget.dataset.widgetIndex;
+                    let lockedFromSector = widget.dataset.lockedFromSector;
+                    widget.style.display = 'none';                    
+
+                    let sidebarItem = document.createElement('div');
+                    sidebarItem.className = 'grid-stack-item';
+                    sidebarItem.setAttribute('data-widget-index', widgetIndex);
+                    sidebarItem.setAttribute('data-category', widgetCategory);
+                    sidebarItem.setAttribute('gs-w', '12');
+                    sidebarItem.setAttribute('gs-h', '18');
+                    sidebarItem.setAttribute('gs-x', '0');
+                    sidebarItem.setAttribute('gs-y', '0');
+                    sidebarItem.innerHTML = `${widget.innerHTML}`; 
+
+                    document.getElementById(`grid-${widgetCategory}`).appendChild(sidebarItem);
+                    categoryGridInstances[`${widgetCategory}`].makeWidget(sidebarItem);
+                    let categoryGrid = document.querySelector(`#grid-${widgetCategory}`);
+
+                    dashboard.batchUpdate(); 
+                    dashboard.engine.nodes = dashboard.engine.nodes.filter(node => node.el !== widget); 
+                    dashboard.commit(); 
+                    notify({
+                        title: `${widgetIndex} removido com sucesso.`,
+                        status: 'success'
+                    });
+                    
+                    let layout = dashboard.save(); 
+                    const finalLayout = layout.map(item => {
+                        let node = dashboard.engine.nodes.find(n => 
+                            n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
+                        );
+                        
+                        if (node) {
+                            item.widgetIndex = node.el.dataset.widgetIndex;  
+                            item.locked_from_sector = node.el.dataset.lockedFromSector 
+                            item.widgetCategory = node.el.dataset.category;                     
+                        }
+
+                        return item;
+                    });
+                        saveBtn.onclick = function () {
+                            notify({
+                                title: 'Layout salvo com sucesso!',
+                                status: 'success'
+                            })
+                            setTimeout(() => {
+                                Livewire.dispatch('saveLayout', [finalLayout]);
+                            }, 2000)
+                        };
+                    
+                    reorganizeSidebarWidgets();
+                } else {
                     notify({
                         title: `Widget ${widgetIndex} não pode ser removido pois está fixado pelo setor.`,
                         status: 'danger'
                     });
-                    return; 
+                    return;
                 }
-                
-                widget.style.display = 'none';                    
-
-                let sidebarItem = document.createElement('div');
-                sidebarItem.className = 'grid-stack-item';
-                sidebarItem.setAttribute('data-widget-index', widgetIndex);
-                sidebarItem.setAttribute('data-category', widgetCategory);
-                sidebarItem.setAttribute('gs-w', '12');
-                sidebarItem.setAttribute('gs-h', '18');
-                sidebarItem.setAttribute('gs-x', '0');
-                sidebarItem.setAttribute('gs-y', '0');
-                sidebarItem.innerHTML = `${widget.innerHTML}`; 
-
-                document.getElementById(`grid-${widgetCategory}`).appendChild(sidebarItem);
-                categoryGridInstances[`${widgetCategory}`].makeWidget(sidebarItem);
-                let categoryGrid = document.querySelector(`#grid-${widgetCategory}`);
-
-                dashboard.batchUpdate(); 
-                dashboard.engine.nodes = dashboard.engine.nodes.filter(node => node.el !== widget); 
-                dashboard.commit(); 
-                notify({
-                    title: `${widgetIndex} removido com sucesso.`,
-                    status: 'success'
-                });
-                
-                let layout = dashboard.save(); 
-                const finalLayout = layout.map(item => {
-                    let node = dashboard.engine.nodes.find(n => 
-                        n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
-                    );
-                    
-                    if (node) {
-                        item.widgetIndex = node.el.dataset.widgetIndex;  
-                        item.locked_from_sector = node.el.dataset.lockedFromSector 
-                        item.widgetCategory = node.el.dataset.category;                     
-                    }
-
-                    return item;
-                });
-                if(isManager === false){
-                    saveBtn.onclick = function () {
-                        notify({
-                            title: 'Layout salvo com sucesso!',
-                            status: 'success'
-                        })
-                        setTimeout(() => {
-                            Livewire.dispatch('saveLayout', [finalLayout]);
-                        }, 2000)
-                    };
-                }
-                
-                reorganizeSidebarWidgets();
             }
         });
 
@@ -501,13 +518,15 @@
             let allWidgetsDOM = dashboard.getGridItems();
             let allWidgets = dashboard.save();
             
-            allWidgetsDOM.forEach(item => {
-                let widgetCategory = item.dataset.category
+            allWidgetsDOM.forEach(item => {                
+                let widgetCategory = item.dataset.category;
+                let lockedBy = item.dataset.lockedBy;
                 let widgetIndex = item.dataset.widgetIndex;
                 dashboard.engine.nodes.forEach(node => {
                     if (node.el === item) {
                         node.widgetIndex = widgetIndex;
                         node.widgetCategory = widgetCategory;
+                        node.lockedBy = lockedBy;
                     }
                 })
             });
@@ -525,44 +544,34 @@
                     const heightToSave = node.el.dataset.originalHeight ? 
                         parseInt(node.el.dataset.originalHeight) : 
                         node.h;
-                    
-                    layoutToSave.push({
-                        x: node.x,
-                        y: node.y,
-                        w: node.w,
-                        h: heightToSave, 
-                        widgetCategory: node.widgetCategory,
-                        widgetIndex: node.el?.dataset?.widgetIndex || node.widgetIndex || null,
-                        locked_from_sector: node.locked_from_sector || false,
-                        locked: node.locked || false,
-                    });
+                    if(node.lockedBy != window.currentUserId){
+                        layoutToSave.push({
+                            x: node.x,
+                            y: node.y,
+                            w: node.w,
+                            h: heightToSave, 
+                            widgetCategory: node.widgetCategory,
+                            widgetIndex: node.el?.dataset?.widgetIndex || node.widgetIndex || null,
+                            locked_from_sector: node.locked_from_sector || false,
+                            locked: node.locked || false,
+                            locked_by: node.lockedBy || null,
+                        });
+                    }
                 }
-            });     
-
-            if(isManager){
-                setDefaultBtn.onclick = function () {
-                    notify({
-                        title: 'Layout do setor salvo com sucesso!',
-                        status: 'success'
-                    });
-                    setTimeout(() => {
-                        Livewire.dispatch('saveLayout', [layoutToSave]);
-                    }, 2000)
-                };
-            }else{
-                saveBtn.onclick = function () {
-                    notify({
-                        title: 'Layout salvo com sucesso!',
-                        status: 'success'
-                    });
-                    setTimeout(() => {
-                        Livewire.dispatch('saveLayout', [layoutToSave]);
-                    }, 2000)
-                };
-            }
+            });    
+            
+            saveBtn.onclick = function () {
+                notify({
+                    title: 'Layout salvo com sucesso!',
+                    status: 'success'
+                });
+                setTimeout(() => {
+                    Livewire.dispatch('saveLayout', [layoutToSave]);
+                }, 2000)
+            };
         });
         
-        dashboard.on('drag', function (event, item) {
+        dashboard.on('dragstart', function (event, item) {
             let widgetIndex = item.getAttribute('data-widget-index'); 
             let widgetCategory = item.getAttribute('data-category');
             if (!widgetIndex) return; 
@@ -640,60 +649,32 @@
             });
         });
 
-        if (setDefaultBtn) {
-            setDefaultBtn.addEventListener('click', function() {
-                const minimizedWidgets = [];
-                document.querySelectorAll('.grid-stack-item').forEach(widget => {
-                    if (widget.classList.contains('widget-minimized')) {
-                        const node = dashboard.engine.nodes.find(n => n.el === widget);
-                        if (node && widget.dataset.originalHeight) {
-                            minimizedWidgets.push({
-                                element: widget,
-                                node: node
-                            });
-                            widget.classList.remove('widget-minimized');
-                            node.h = parseInt(widget.dataset.originalHeight);
-                            widget.setAttribute('gs-h', widget.dataset.originalHeight);
-                        }
-                    }
-                });
+        document.getElementById('modal-save-open').addEventListener('click', () => {
+            document.getElementById('save-modal').classList.remove('hidden');
+        });
 
-                let layout = dashboard.save();
+        document.getElementById('modal-save').addEventListener('click', () => {
+            document.getElementById('save-modal').classList.remove('hidden');
+        });
 
-                layout.forEach(item => {
-                    const node = dashboard.engine.nodes.find(n => 
-                        n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
-                    );
-                    
-                    if (node) {
-                        if (node.locked) {
-                            item.locked_from_sector = true; 
-                            node.locked_from_sector = true;
-                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
-                        } else {
-                            item.locked_from_sector = false; 
-                            node.locked_from_sector = false;
-                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
-                        }
-
-                        if (!item.widgetIndex && node.el) {
-                            item.widgetIndex = node.el.dataset.widgetIndex || null;
-                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
-                        }
-
-                        if(!item.widgetCategory && node.el) {
-                            item.widgetCategory = node.el.dataset.category || node.widgetCategory;
-                        }
-                    }
-                });
-
-                dashboard.batchUpdate();
-                dashboard.commit();
-
-                console.log('Layout final:', layout);
-                Livewire.dispatch('setDefaultLayoutSector', [layout]);
+        document.getElementById('modal-reset').addEventListener('click', () => {
+            document.getElementById('reset-modal').classList.remove('hidden');
+        });
+        
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('save-modal').classList.add('hidden');
+                document.getElementById('reset-modal').classList.add('hidden');
             });
-        }
+        });
+
+        document.getElementById('save-layout').addEventListener('click', () => {
+            document.getElementById('save-modal').classList.add('hidden');
+        });
+
+        document.getElementById('reset-layout').addEventListener('click', () => {
+            document.getElementById('reset-modal').classList.add('hidden');
+        });
 
         resetLayoutBtn.addEventListener('click', resetLayout);
 
@@ -712,11 +693,24 @@
                 toggleEdit();
             }
         });
-
+        
         personalizeBtn.addEventListener('click', function () {
             toggleEdit();
+            toggleEditMode();
         });
 
+        cancelarEdicaoBtn.addEventListener('click', function () {
+            toggleEdit();
+            toggleEditMode();
+        });
+
+        document.getElementById('floating-action-button').addEventListener('click', function() {
+            const menu = document.getElementById('action-menu');
+            menu.classList.toggle('hidden');
+            menu.classList.toggle('flex');
+            menu.classList.toggle('flex-col');
+        });
+        
         Livewire.on('layoutSaved', function () {
             location.reload();
         });
