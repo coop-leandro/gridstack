@@ -34,7 +34,7 @@ class DashboardEditor extends Component
                 return redirect('/');
             }
 
-            // Define se o usuário é um superior (tem subordinados)
+            // Define se o usuário é um superior
             $this->isManager = $user->subordinates->isNotEmpty();
 
             // Carrega e mescla o layout com o layout de todos os superiores
@@ -126,14 +126,15 @@ class DashboardEditor extends Component
     {
         $userId = Auth::id();
         //dd($layout);
+        $userWidgets = [];
         foreach($layout as $item){
+            $userId = Auth::id();
 
             $userWidgets = collect($layout)
                 ->filter(fn($item) => empty(data_get($item, 'locked_by')) || data_get($item, 'locked_by') == $userId)
                 ->values()
                 ->all();
         }
-        //dd($userWidgets);
         try {
 
             if (!$userId) {

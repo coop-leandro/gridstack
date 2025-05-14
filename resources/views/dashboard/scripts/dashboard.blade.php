@@ -393,7 +393,7 @@
                                 item.locked_by = node.el.dataset.lockedBy ? node.el.dataset.lockedBy : window.currentUserId;                   
                             }
                         });
-
+                        
                         saveBtn.onclick = function () {
                             notify({
                                 title: 'Layout salvo com sucesso!',
@@ -457,21 +457,26 @@
                         title: `${widgetIndex} removido com sucesso.`,
                         status: 'success'
                     });
-                    
                     let layout = dashboard.save(); 
-                    const finalLayout = layout.map(item => {
-                        let node = dashboard.engine.nodes.find(n => 
-                            n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
-                        );
-                        
-                        if (node) {
-                            item.widgetIndex = node.el.dataset.widgetIndex;  
-                            item.locked_from_sector = node.el.dataset.lockedFromSector 
-                            item.widgetCategory = node.el.dataset.category;                     
-                        }
+                    
+                    const finalLayout = layout
+                        .map(item => {
+                            let node = dashboard.engine.nodes.find(n => 
+                                n.x === item.x && n.y === item.y && n.w === item.w && n.h === item.h
+                            );
 
-                        return item;
-                    });
+                            if (node) {
+                                item.widgetIndex = node.el.dataset.widgetIndex;  
+                                item.locked_from_sector = node.el.dataset.lockedFromSector;
+                                item.lockedBy = node.el.dataset.lockedBy;
+                                item.widgetCategory = node.el.dataset.category; 
+                                item.content = null;
+                            }
+
+                            return item;
+                        })
+                        .filter(item => item.lockedBy == window.currentUserId || !item.lockedBy);
+                    
                         saveBtn.onclick = function () {
                             notify({
                                 title: 'Layout salvo com sucesso!',
@@ -544,7 +549,7 @@
                     const heightToSave = node.el.dataset.originalHeight ? 
                         parseInt(node.el.dataset.originalHeight) : 
                         node.h;
-                    if(node.lockedBy != window.currentUserId){
+                    if(node.lockedBy == window.currentUserId || node.lockedBy == '' || node.lockedBy == null){
                         layoutToSave.push({
                             x: node.x,
                             y: node.y,
@@ -559,6 +564,7 @@
                     }
                 }
             });    
+            //console.log(layoutToSave, 'change');
             
             saveBtn.onclick = function () {
                 notify({
@@ -571,7 +577,7 @@
             };
         });
         
-        dashboard.on('dragstart', function (event, item) {
+        dashboard.on('drag', function (event, item) {
             let widgetIndex = item.getAttribute('data-widget-index'); 
             let widgetCategory = item.getAttribute('data-category');
             if (!widgetIndex) return; 
