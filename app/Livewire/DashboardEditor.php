@@ -96,32 +96,31 @@ class DashboardEditor extends Component
 
     protected function mergeLayouts($userLayout, $supervisorLayouts)
     {
-        try {
-            $merged = [];
+        $merged = [];
+        $lockedWidgets = [];
 
-            // Adiciona os widgets fixados de todos os supervisores
-            foreach ($supervisorLayouts as $supervisorLayout) {
-                foreach ($supervisorLayout as $widget) {
-                    if (isset($widget->locked) && $widget->locked) {
-                        $merged[] = $widget; 
-                    }
+        // 1. Primeiro processa TODOS os supervisores (do mais alto para o mais baixo)
+        foreach (array_reverse($supervisorLayouts) as $layout) {
+            foreach ($layout as $widget) {
+                $widgetIndex = $widget->widgetIndex ?? null;
+                $isLocked = isset($widget->locked) && $widget->locked;
+
+                if ($widgetIndex && $isLocked && !isset($lockedWidgets[$widgetIndex])) {
+                    $lockedWidgets[$widgetIndex] = $widget;
                 }
             }
-
-            // Adiciona os widgets do usuário, não duplicando os fixados dos supervisores
-            foreach ($userLayout as $widget) {
-                if (!in_array($widget, $merged)) {
-                    $merged[] = $widget; 
-                }
-            }
-
-            return $merged;
-        } catch (Exception $e) {
-            Log::error('Erro ao mesclar layouts: ' . $e->getMessage());
-            return array_merge($userLayout, $supervisorLayouts);
         }
-    }
 
+        // 2. Depois adiciona widgets do usuário (apenas os não bloqueados por superiores)
+        foreach ($userLayout as $widget) {
+            $widgetIndex = $widget->widgetIndex ?? null;
+            if ($widgetIndex && !isset($lockedWidgets[$widgetIndex])) {
+                $merged[] = $widget;
+            }
+        }
+
+        return array_merge(array_values($lockedWidgets), $merged);
+    }
     public function saveLayout($layout)
     {
         $userId = Auth::id();

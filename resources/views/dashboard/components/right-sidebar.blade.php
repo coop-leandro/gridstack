@@ -27,7 +27,7 @@
                 <div x-show="openCategory === 'comunicacao'" x-collapse class="bg-white accordion-content">
                     <div>
                         <div class="grid-stack p-3" id="grid-comunicacao" data-category-grid="comunicacao">
-                            <div class="grid-stack-item z-999" data-category="comunicacao" data-locked-from-sector data-widget="avisos" gs-w="12" gs-h="18" gs-y="" data-widget-index="avisos">
+                            <div class="grid-stack-item z-999" data-origin="sidebar" data-category="comunicacao" data-locked-from-sector data-widget="avisos" gs-w="12" gs-h="18" gs-y="" data-widget-index="avisos">
                                 <div class="grid-stack-item-content bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200">
                                     <div class="w-full h-full p-4">
                                         <div class="flex justify-between items-center mb-4">
@@ -80,7 +80,7 @@
                                 </div>
                             </div>
                             
-                            <div class="grid-stack-item z-999" data-category="comunicacao" data-locked-from-sector data-widget="feed" gs-w="12" gs-h="18" gs-y="0" data-widget-index="feed">
+                            <div class="grid-stack-item z-999" data-origin="sidebar" data-category="comunicacao" data-locked-from-sector data-widget="feed" gs-w="12" gs-h="18" gs-y="0" data-widget-index="feed">
                                 <div class="grid-stack-item-content bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200">
                                     <div class="w-full h-full p-4">
                                         <div class="flex justify-between items-center mb-4">
@@ -154,7 +154,7 @@
                     <div>
                         <div class="grid-stack p-3" id="grid-financeiro" data-category-grid="financeiro">
                             <!-- Widget de Saldo -->
-                            <div class="grid-stack-item" data-widget="saldo" gs-w="12" gs-h="10" gs-x="0" gs-y="0" data-widget-index="saldo">
+                            <div class="grid-stack-item" data-origin="sidebar" data-widget="saldo" gs-w="12" gs-h="10" gs-x="0" gs-y="0" data-widget-index="saldo">
                                 <div class="grid-stack-item-content bg-white border border-gray-200 rounded-xl overflow-hidden ">
                                     <div class="w-full h-full p-4">
                                         <div class="flex justify-between items-center mb-3">
@@ -182,7 +182,7 @@
                             </div>
                             
                             <!-- Widget de Despesas -->
-                            <div class="grid-stack-item" data-widget="despesas" gs-w="12" gs-h="8" gs-x="0" gs-y="10" data-widget-index="despesas">
+                            <div class="grid-stack-item" data-origin="sidebar" data-widget="despesas" gs-w="12" gs-h="8" gs-x="0" gs-y="10" data-widget-index="despesas">
                                 <div class="grid-stack-item-content bg-white border border-gray-200 rounded-xl overflow-hidden ">
                                     <div class="w-full h-full p-4">
                                         <div class="flex justify-between items-center mb-3">
@@ -238,7 +238,7 @@
                     <div>
                         <div class="grid-stack p-3" id="grid-rh" data-category-grid="rh">
                             <!-- Widget de Aniversariantes -->
-                            <div class="grid-stack-item" data-category="rh" data-widget="aniversariantes" gs-w="12" gs-h="18" gs-x="0" gs-y="0" data-widget-index="widget">
+                            <div class="grid-stack-item" data-origin="sidebar" data-category="rh" data-widget="aniversariantes" gs-w="12" gs-h="18" gs-x="0" gs-y="0" data-widget-index="widget">
                                 <div class="grid-stack-item-content bg-white border border-gray-200 rounded-xl overflow-hidden">
                                     <div class="w-full h-full p-4">
                                         <div class="flex justify-between items-center mb-4">
@@ -317,7 +317,7 @@
                             </div>
                 
                             <!-- Widget de Férias -->
-                            <div class="grid-stack-item" data-widget="ferias" gs-w="12" gs-h="10" gs-x="0" gs-y="18" data-widget-index="ferias">
+                            <div class="grid-stack-item" data-origin="sidebar" data-widget="ferias" gs-w="12" gs-h="10" gs-x="0" gs-y="18" data-widget-index="ferias">
                                 <div class="grid-stack-item-content bg-white border border-gray-200 rounded-xl overflow-hidden">
                                     <div class="w-full h-full p-4">
                                         <div class="flex justify-between items-center mb-4">

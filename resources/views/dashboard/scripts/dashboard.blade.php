@@ -2,7 +2,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         window.currentUserId = {{ auth()->user()->id }}; 
         // ======================
-        // GLOBAL VARIABLES
+        // VARIAVEIS GLOBAIS
         // ======================
         const saveBtn = document.getElementById('save-layout');
         const sidebar = document.getElementById('sidebar');
@@ -20,6 +20,7 @@
         
         let dashboard = GridStack.init({
             cellHeight: 100,
+            autoResize: false,
             minRow: 3,
             acceptWidgets: true,
             float: true,
@@ -38,7 +39,7 @@
         };
 
         // ======================
-        // UTILITY FUNCTIONS
+        // FUNÇÕES AUXILIARES	
         // ======================
         function notify(options) {
             new FilamentNotification()
@@ -76,7 +77,7 @@
         }
 
         // ======================
-        // WIDGET MANAGEMENT
+        // GERENCIAMENTO DE WIDGETS
         // ======================
         function reorganizeColumnAfterMinimize(widget) {
             const grid = dashboard;
@@ -228,7 +229,7 @@
         }
 
         // ======================
-        // SIDEBAR MANAGEMENT
+        // GERENCIAMENTO DE CATEGORIAS
         // ======================
         function reorganizeSidebarWidgets() {
             Object.keys(categoryGridInstances).forEach(category => {
@@ -293,7 +294,7 @@
         }
 
         // ======================
-        // LAYOUT MANAGEMENT
+        // GERENCIAMENTO DE LAYOUT
         // ======================
         function resetLayout() {
             notify({
@@ -347,7 +348,6 @@
             }
         });
 
-        let teste = dashboard.getGridItems()
         document.addEventListener('click', function (event) {
             let widget = event.target.closest('.grid-stack-item');
             if (!widget) return;
@@ -499,8 +499,28 @@
         });
 
         // ======================
-        // DASHBOARD EVENTS
+        // DASHBOARD EVENTOS
         // ======================
+                
+        dashboard.on('dropped', function(event, previousWidget, newWidget) {
+            const origin = newWidget.el.getAttribute('data-origin');             
+            if(origin == 'sidebar'){
+                const widgetIndex = newWidget.el.dataset.widgetIndex;
+                const widgetCategory = newWidget.el.dataset.category;
+                
+                const { w: newWidth, h: newHeight } = widgetSizes[widgetIndex] || { w: 3, h: 5 };
+                
+                dashboard.update(newWidget.el, { 
+                    w: newWidth, 
+                    h: newHeight,
+                    widgetIndex: widgetIndex,
+                    widgetCategory: widgetCategory,
+                });
+                reorganizeColumnAfterMinimize(newWidget.el);
+                reorganizeSidebarWidgets();
+            }
+        });
+
         dashboard.on('added', function (event, items) {
             dashboard.batchUpdate();
 
@@ -564,7 +584,7 @@
                     }
                 }
             });    
-            //console.log(layoutToSave, 'change');
+            // console.log(layoutToSave, 'change');
             
             saveBtn.onclick = function () {
                 notify({
@@ -578,6 +598,7 @@
         });
         
         dashboard.on('drag', function (event, item) {
+            let origin = item.getAttribute('data-origin');
             let widgetIndex = item.getAttribute('data-widget-index'); 
             let widgetCategory = item.getAttribute('data-category');
             if (!widgetIndex) return; 
@@ -588,7 +609,7 @@
             let itemY = parseInt(item.getAttribute('gs-y'));
             let node = dashboard.engine.nodes.find(n => n.x == itemX && n.y == itemY);
             
-            if (node) {
+            if (node && origin == 'sidebar') {
                 node.w = newWidth;
                 node.h = newHeight;
                 node.widgetIndex = widgetIndex;
@@ -602,7 +623,7 @@
         });
 
         // ======================
-        // INITIALIZATION
+        // INICIALIZAÇÃO
         // ======================
         initializeCategoryGrids();  
         
