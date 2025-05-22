@@ -49,26 +49,26 @@
     </div>
         <div id="main-dashboard" class="grid-stack">
             {{-- @php
-                dd($userId);
+                dd($layout);
             @endphp --}}
             @foreach($layout as $item)
                 @if (isset($item))
                     <div class="grid-stack-item"
-                        gs-w="{{ $item->w }}"
-                        gs-h="{{ $item->h }}"
-                        gs-x="{{ $item->x }}"
-                        gs-y="{{ $item->y }}"
-                        data-widget-index = "{{ $item->widgetIndex }}"
-                        data-category = "{{ $item->widgetCategory }}"
-                        data-locked-from-sector="{{  $item->locked_by ?? '' }}"
-                        data-locked-by="{{  $item->locked_by ?? '' }}" 
-                        gs-no-move="{{ $item->locked ?? false ? 'true' : 'false' }}"
-                        gs-no-resize="{{ $item->locked ?? false ? 'true' : 'false' }}"
-                        gs-locked="{{ $item->locked ?? false ? 'true' : 'false' }}"
+                        gs-w="{{ $item['w'] }}"
+                        gs-h="{{ $item['h'] }}"
+                        gs-x="{{ $item['x'] }}"
+                        gs-y="{{ $item['y'] }}"
+                        data-widget-index = "{{ $item['widgetIndex'] }}"
+                        data-category = "{{ $item['widgetCategory'] }}"
+                        data-locked-from-sector="{{  $item['locked_by'] ?? '' }}"
+                        data-locked-by="{{  $item['locked_by'] ?? '' }}" 
+                        gs-no-move="{{ $item['locked'] ?? false ? 'true' : 'false' }}"
+                        gs-no-resize="{{ $item['locked'] ?? false ? 'true' : 'false' }}"
+                        gs-locked="{{ $item['locked'] ?? false ? 'true' : 'false' }}"
                         >
                         <div class="grid-stack-item-content p-3 ">
                             <div class="absolute bulk-actions top-2 right-2 flex space-x-2 text-xl">
-                                @if($isManager && (empty($item->locked_by) || $item->locked_by == $userId))
+                                @if($isManager && (empty($item['locked_by']) || $item['locked_by'] == $userId))
                                     <button class="remove-widget p-2 text-red-500 hover:text-red-700">
                                         <i class="remove-widget fas fa-times"></i>
                                     </button>
@@ -82,7 +82,7 @@
                                         <i class="fas resize-widget fa-expand-arrows-alt"></i>
                                     </button>
 
-                                @elseif($isManager && $item->locked_by != $userId)
+                                @elseif($isManager && $item['locked_by'] != $userId)
                                     <button class="remove-widget p-2 text-red-500 hover:text-red-700 icon-disabled" disabled>
                                         <i class="remove-widget fas fa-times"></i>
                                     </button>
@@ -96,7 +96,7 @@
                                         <i class="fas resize-widget fa-expand-arrows-alt"></i>
                                     </button>
 
-                                @elseif(!$isManager && empty($item->locked_by) || $item->locked_by == null)
+                                @elseif(!$isManager && empty($item['locked_by']) || $item['locked_by'] == null)
                                     <button class="remove-widget p-2 text-red-500 hover:text-red-700">
                                         <i class="remove-widget fas fa-times"></i>
                                     </button>
@@ -107,7 +107,7 @@
                                         <i class="fas resize-widget fa-expand-arrows-alt"></i>
                                     </button>
 
-                                @elseif(!$isManager && !empty($item->locked_by))
+                                @elseif(!$isManager && !empty($item['locked_by']))
                                     <button class="remove-widget p-2 text-red-500 hover:text-red-700 icon-disabled" disabled>
                                         <i class="remove-widget fas fa-times"></i>
                                     </button>
@@ -119,11 +119,11 @@
                                     </button>
                                 @endif
                             </div>
-                            @if ($item->widgetIndex == 'noticias')
+                            @if ($item['widgetIndex'] == 'noticias')
                                 @livewire('noticias')
-                            @elseif($item->widgetIndex == 'avisos')
+                            @elseif($item['widgetIndex'] == 'avisos')
                                 @livewire('avisos')
-                            @elseif($item->widgetIndex == 'feed')
+                            @elseif($item['widgetIndex'] == 'feed')
                                 @livewire('feeds')
                             @else
                                 @livewire('widgets-ex')

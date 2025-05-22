@@ -3,10 +3,9 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use App\Models\GridStackLayout;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Exception;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class DashboardEditor extends Component
@@ -14,6 +13,7 @@ class DashboardEditor extends Component
     public $layout;
     public $isManager = false;
     public $userId;
+    public $user;
     protected $listeners = [
         'saveLayout' => 'saveLayout',
         'resetLayout' => 'resetLayout',
@@ -21,25 +21,18 @@ class DashboardEditor extends Component
 
     public function mount()
     {
+        $this->user = Auth::user();
+
         try {
-            $userId = Auth::id();
-            $this->userId = $userId;
-            if (!$userId) {
-                return redirect('/');
-                throw new Exception('Usuário não autenticado.');
+            $response = Http::get('http://host.docker.internal:8000/dashboard/layout', ['user_id' => $this->user->id]);
+            if($response->successful()){
+                $this->layout = $response->json('layout');
+                $this->isManager = $response->json('isManager');
+                $this->userId = $response->json('userId');
+            } else {
+                Log::error('Erro ao carregar layout: ' . $response->body());
+                $this->layout = [];
             }
-
-            $user = User::find($userId);
-            if (!$user) {
-                return redirect('/');
-            }
-
-            // Define se o usuário é um superior
-            $this->isManager = $user->subordinates->isNotEmpty();
-
-            // Carrega e mescla o layout com o layout de todos os superiores
-            $this->loadLayout($user);
-
         } catch (Exception $e) {
             Log::error('Erro no método mount: ' . $e->getMessage());
             $this->layout = [];
@@ -47,142 +40,21 @@ class DashboardEditor extends Component
         return view('dashboard.index', $this->layout);
     }
 
-    protected function loadLayout($user)
-    {
-        // Recupera os layouts de todos os superiores
-        $supervisorLayouts = $this->getAllSupervisorLayouts($user);
-
-        // Recupera o layout do próprio usuário
-        $userLayout = $this->getLayoutForUser($user);
-
-        // Mescla o layout do usuário com os layouts dos superiores
-        $this->layout = $this->mergeLayouts($userLayout, $supervisorLayouts);
-    }
-
-    protected function getAllSupervisorLayouts($user)
-    {
-        $supervisorLayouts = [];
-
-        // Percorre todos os supervisores até o topo da hierarquia
-        while ($user->supervisor) {
-            $supervisor = $user->supervisor;
-            $supervisorLayouts[] = $this->getLayoutForUser($supervisor);
-            $user = $supervisor;
-        }
-
-        return $supervisorLayouts;
-    }
-
-    protected function getLayoutForUser($user)
-    {
-        $layoutModel = GridStackLayout::firstOrCreate(
-            ['guest_id' => $user->id],
-            ['layout' => "[]"]
-        );
-
-        return $this->safeJsonDecode($layoutModel->layout);
-    }
-
-    protected function safeJsonDecode($json)
-    {
+    public function saveLayout($layout){
         try {
-            $decoded = json_decode($json);
-            return $decoded !== null ? $decoded : [];
-        } catch (Exception $e) {
-            Log::error('Erro ao decodificar JSON: ' . $e->getMessage());
-            return [];
-        }
-    }
-
-    protected function mergeLayouts($userLayout, $supervisorLayouts)
-    {
-        $merged = [];
-        $lockedWidgets = [];
-
-        // 1. Primeiro processa TODOS os supervisores (do mais alto para o mais baixo)
-        foreach (array_reverse($supervisorLayouts) as $layout) {
-            foreach ($layout as $widget) {
-                $widgetIndex = $widget->widgetIndex ?? null;
-                $isLocked = isset($widget->locked) && $widget->locked;
-
-                if ($widgetIndex && $isLocked && !isset($lockedWidgets[$widgetIndex])) {
-                    $lockedWidgets[$widgetIndex] = $widget;
-                }
-            }
-        }
-
-        // 2. Depois adiciona widgets do usuário (apenas os não bloqueados por superiores)
-        foreach ($userLayout as $widget) {
-            $widgetIndex = $widget->widgetIndex ?? null;
-            if ($widgetIndex && !isset($lockedWidgets[$widgetIndex])) {
-                $merged[] = $widget;
-            }
-        }
-
-        return array_merge(array_values($lockedWidgets), $merged);
-    }
-    public function saveLayout($layout)
-    {
-        $userId = Auth::id();
-        //dd($layout);
-        $userWidgets = [];
-        foreach($layout as $item){
-            $userId = Auth::id();
-
-            $userWidgets = collect($layout)
-                ->filter(fn($item) => empty(data_get($item, 'locked_by')) || data_get($item, 'locked_by') == $userId)
-                ->values()
-                ->all();
-        }
-        try {
-
-            if (!$userId) {
-                return redirect('/');
-                throw new Exception('Usuário não autenticado.');
-            }
-
-            if (!is_array($userWidgets)) {
-                throw new Exception('Dados de layout inválidos.');
-            }
-
-            GridStackLayout::updateOrCreate(
-                ['guest_id' => $userId],
-                ['layout' => json_encode($userWidgets)]
-            );
-            
+            Http::post('http://host.docker.internal:8000/dashboard/layout', [
+                'user_id' => $this->user->id,
+                'layout' => $layout,
+            ]);
             $this->dispatch('layoutSaved');
         } catch (Exception $e) {
             Log::error('Erro ao salvar layout: ' . $e->getMessage());
         }
     }
 
-    public function resetLayout()
-    {
-        try {
-            $userId = Auth::id();
-            if (!$userId) {
-                throw new Exception('Usuário não autenticado.');
-            }
-
-            $user = User::find($userId);
-            if (!$user) {
-                throw new Exception('Usuário não encontrado.');
-            }
-
-            // Recupera os layouts de todos os supervisores ou o layout padrão
-            $supervisorLayouts = $this->getAllSupervisorLayouts($user);
-
-            $flattenedLayout = array_merge(...$supervisorLayouts);
-
-            // Reseta o layout do usuário
-            $layoutJson = json_encode($flattenedLayout);
-
-            GridStackLayout::updateOrCreate(
-                ['guest_id' => $userId],
-                ['layout' => $layoutJson]
-            );
-
-            $this->layout = $this->safeJsonDecode($layoutJson);
+    public function resetLayout(){
+        try{
+            Http::post('http://host.docker.internal:8000/dashboard/layout/reset', ['user_id' => $this->user->id]);
             $this->dispatch('layoutSaved');
         } catch (Exception $e) {
             Log::error('Erro ao resetar layout: ' . $e->getMessage());
